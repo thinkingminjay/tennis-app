@@ -3,7 +3,7 @@
 
 import { Image } from 'expo-image';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Listing } from '../../api';
@@ -12,7 +12,9 @@ import { RECEIVING, bandLabel, courtOrder, isOffline, minutesAgo, period, receip
 import { useColors } from '../../theme';
 import { Button, Card, Empty, Ionicons, SURFACE_LABEL, SectionTitle, SourceFooter, Stat, StatusPill, SurfaceBall, surfaceColors } from '../../ui';
 
-const NO_COURT = '코트 구분 없음';
+// Many titles never name a court (e.g. "삼청테니스장 코트이용(평일)"); that is the source data, not a parse miss.
+const NO_COURT = '코트 표시 없음';
+const CLOSED = '접수종료';
 
 export default function FacilityDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,7 +32,9 @@ export default function FacilityDetail() {
     for (const arr of map.values()) {
       arr.sort((a, b) => Number(b.status === RECEIVING) - Number(a.status === RECEIVING) || (a.period_start ?? '').localeCompare(b.period_start ?? ''));
     }
-    return [...map.entries()].sort(([a], [b]) => (a === NO_COURT ? 1 : b === NO_COURT ? -1 : courtOrder(a, b)));
+    const entries = [...map.entries()].sort(([a], [b]) => (a === NO_COURT ? 1 : b === NO_COURT ? -1 : courtOrder(a, b)));
+    // When no title names a court, one plain "예약 상품" section reads better than a "no court" label.
+    return entries.length === 1 && entries[0][0] === NO_COURT ? [['예약 상품', entries[0][1]] as const] : entries;
   }, [listings]);
 
   if (!f) return <Empty icon="alert-circle-outline" title="테니스장을 찾을 수 없어요" />;
@@ -80,14 +84,7 @@ export default function FacilityDetail() {
         </View>
 
         {courts.map(([label, items]) => (
-          <View key={label}>
-            <SectionTitle right={<Text style={[styles.meta, { color: c.sub }]}>{items.length}개</Text>}>{label}</SectionTitle>
-            <Card>
-              {items.map((l, i) => (
-                <ListingRow key={l.svc_id} listing={l} first={i === 0} offline={offline} />
-              ))}
-            </Card>
-          </View>
+          <CourtSection key={label} label={label} items={items} offline={offline} />
         ))}
 
         {f.address || f.phone || f.surfaces?.length ? (
@@ -130,6 +127,35 @@ export default function FacilityDetail() {
           />
         </SafeAreaView>
       )}
+    </View>
+  );
+}
+
+// Closed listings (접수종료) fold behind a "지난 상품" row so current ones stay on top.
+function CourtSection({ label, items, offline }: { label: string; items: readonly Listing[]; offline: boolean }) {
+  const c = useColors();
+  const [showClosed, setShowClosed] = useState(false);
+  const current = items.filter((l) => l.status !== CLOSED);
+  const closed = items.length - current.length;
+  const shown = showClosed || current.length === 0 ? items : current;
+  return (
+    <View>
+      <SectionTitle right={<Text style={[styles.meta, { color: c.sub }]}>{items.length}개</Text>}>{label}</SectionTitle>
+      <Card>
+        {shown.map((l, i) => (
+          <ListingRow key={l.svc_id} listing={l} first={i === 0} offline={offline} />
+        ))}
+        {closed && current.length ? (
+          <Pressable
+            onPress={() => setShowClosed(!showClosed)}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.fold, { borderTopColor: c.border, opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Text style={[styles.meta, { color: c.sub }]}>{showClosed ? '지난 상품 접기' : `접수종료된 상품 ${closed}개 더 보기`}</Text>
+            <Ionicons name={showClosed ? 'chevron-up' : 'chevron-down'} size={14} color={c.sub} />
+          </Pressable>
+        ) : null}
+      </Card>
     </View>
   );
 }
@@ -185,6 +211,7 @@ const styles = StyleSheet.create({
   meta: { fontSize: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   rowTitle: { fontSize: 15, fontWeight: '600' },
+  fold: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   info: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
   bottom: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });
