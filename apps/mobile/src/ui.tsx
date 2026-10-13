@@ -145,7 +145,6 @@ export function Hatch({ colors, size }: { colors: string[]; size: number }) {
                 width: 2,
                 height: size * 2,
                 backgroundColor: color,
-                opacity: 0.3,
                 transform: [{ rotate: '45deg' }],
               }}
             />

@@ -176,7 +176,9 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
       <View style={styles.cardMain}>
         <View style={[styles.thumb, { backgroundColor: c.surface }]}>
           <Hatch colors={surfaceColors(c, f.surfaces)} size={THUMB} />
-          <SurfaceBall colors={surfaceColors(c, f.surfaces)} size={22} />
+          <View style={[styles.ballBack, { backgroundColor: c.card }]}>
+            <SurfaceBall colors={surfaceColors(c, f.surfaces)} size={22} />
+          </View>
         </View>
         <View style={{ flex: 1, gap: 4 }}>
           <View style={styles.cardTop}>
@@ -223,6 +225,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
   },
   thumb: { width: THUMB, height: THUMB, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  // Keeps the ball readable on top of full-strength stripes of the same colour.
+  ballBack: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
   sheet: { flex: 1 },
