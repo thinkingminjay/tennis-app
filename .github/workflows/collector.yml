@@ -3,6 +3,7 @@ name: collector
 on:
   schedule:
     # Every 10 minutes (UTC). GitHub may delay scheduled runs by several minutes under load.
+    # Scheduled runs only start from the default branch (main) after the file is pushed there.
     - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
