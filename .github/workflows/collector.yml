@@ -2,8 +2,8 @@ name: collector
 
 on:
   schedule:
-    # Every 30 minutes (UTC). GitHub may delay scheduled runs by several minutes under load.
-    - cron: '*/30 * * * *'
+    # Every 10 minutes (UTC). GitHub may delay scheduled runs by several minutes under load.
+    - cron: '*/10 * * * *'
   workflow_dispatch: {}
 
 # Never run two collections at once; a late run waits for the previous one.
