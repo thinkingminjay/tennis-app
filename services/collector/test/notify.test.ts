@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildMessage, inQuietHours, matchesWatch, planNotifications } from '../src/notify.ts';
+import { buildMessage, inQuietHours, matchesWatch, planNotifications, planReceipts } from '../src/notify.ts';
 import type { DeviceRow, EventRow, WatchRow } from '../src/notify.ts';
 
 function event(id: number, over: Partial<EventRow['listing']> = {}, kind: EventRow['kind'] = 'receipt_open'): EventRow {
@@ -100,4 +100,20 @@ test('planNotifications: never pushes events of facilities not bookable online',
   const [plan] = planNotifications([device()], [watch()], events, noon);
   assert.deepEqual(plan.events.map((e) => e.id), [6]);
   assert.equal(plan.cursor, 6);
+});
+
+test('planReceipts: stores ok/error per notification, drops unregistered devices, waits for missing receipts', () => {
+  const pending = [
+    { id: 1, device_id: 'D1', ticket_id: 'a' },
+    { id: 2, device_id: 'D2', ticket_id: 'b' },
+    { id: 3, device_id: 'D3', ticket_id: 'c' },
+    { id: 4, device_id: 'D4', ticket_id: 'd' },
+  ];
+  const { byValue, unregistered } = planReceipts(pending, {
+    a: { status: 'ok' },
+    b: { status: 'error', details: { error: 'DeviceNotRegistered' } },
+    c: { status: 'error', details: { error: 'MessageRateExceeded' } },
+  });
+  assert.deepEqual(Object.fromEntries(byValue), { ok: [1], DeviceNotRegistered: [2], MessageRateExceeded: [3] });
+  assert.deepEqual([...unregistered], ['D2']);
 });

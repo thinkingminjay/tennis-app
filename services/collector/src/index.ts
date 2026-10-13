@@ -5,7 +5,7 @@
 import { fetchAllRows } from './openApi.ts';
 import { buildSnapshot, diffEvents } from './transform.ts';
 import { Db } from './supabase.ts';
-import { sendNotifications } from './notify.ts';
+import { checkReceipts, sendNotifications } from './notify.ts';
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
@@ -74,6 +74,8 @@ async function main() {
 
   // Runs even without new events: devices leaving quiet hours get what was held.
   console.log(await sendNotifications(db));
+  // A receipt failure must not fail the run: collection and sending already succeeded.
+  console.log(await checkReceipts(db).catch((e) => `발송 결과 확인 실패: ${e instanceof Error ? e.message : e}`));
 }
 
 function countBy(items: string[]): string {

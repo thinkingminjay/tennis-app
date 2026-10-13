@@ -51,6 +51,8 @@ export interface PushMessage {
 }
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+const EXPO_RECEIPTS_URL = 'https://exp.host/--/api/v2/push/getReceipts';
+const RECEIPT_DELAY_MINUTES = 15; // Expo recommends waiting ~15 minutes before reading receipts
 const EVENT_WINDOW_HOURS = 24; // never deliver events older than this (e.g. a device that was quiet for long)
 
 // Facilities the user confirmed are closed or not bookable online on the Seoul booking site;
@@ -166,7 +168,7 @@ export async function sendNotifications(db: Db, now = new Date()): Promise<strin
   const outgoing = plans
     .filter((p) => p.events.length > 0)
     .map((p) => ({ plan: p, message: buildMessage(p.device.expo_push_token, p.events) }));
-  const unregistered = await pushToExpo(outgoing.map((o) => o.message));
+  const { unregistered, tickets } = await pushToExpo(outgoing.map((o) => o.message));
   const delivered = outgoing.filter((o) => !unregistered.has(o.message.to));
 
   await db.insert(
@@ -177,6 +179,7 @@ export async function sendNotifications(db: Db, now = new Date()): Promise<strin
       body: message.body,
       svc_ids: plan.events.map((e) => e.svc_id),
       url: message.data.url ?? null,
+      ticket_id: tickets.get(message.to) ?? null,
     })),
   );
   await db.upsert(
@@ -189,9 +192,11 @@ export async function sendNotifications(db: Db, now = new Date()): Promise<strin
   return `알림 ${delivered.length}건 발송, 해지된 기기 ${unregistered.size}개 정리`;
 }
 
-// Sends in chunks of 100 (Expo limit). Returns tokens Expo reports as no longer registered.
-async function pushToExpo(messages: PushMessage[]): Promise<Set<string>> {
+// Sends in chunks of 100 (Expo limit). Returns tokens Expo reports as no longer registered and
+// the ticket id per token (one message per token per run) for the later receipt check.
+async function pushToExpo(messages: PushMessage[]): Promise<{ unregistered: Set<string>; tickets: Map<string, string> }> {
   const unregistered = new Set<string>();
+  const tickets = new Map<string, string>();
   for (let i = 0; i < messages.length; i += 100) {
     const chunk = messages.slice(i, i + 100);
     const res = await fetch(EXPO_PUSH_URL, {
@@ -200,12 +205,64 @@ async function pushToExpo(messages: PushMessage[]): Promise<Set<string>> {
       body: JSON.stringify(chunk),
     });
     if (!res.ok) throw new Error(`Expo Push HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    const { data } = (await res.json()) as { data: { status: string; message?: string; details?: { error?: string } }[] };
+    const { data } = (await res.json()) as { data: { status: string; id?: string; message?: string; details?: { error?: string } }[] };
     data.forEach((ticket, j) => {
-      if (ticket.status === 'ok') return;
+      if (ticket.status === 'ok') {
+        if (ticket.id) tickets.set(chunk[j].to, ticket.id);
+        return;
+      }
       if (ticket.details?.error === 'DeviceNotRegistered') unregistered.add(chunk[j].to);
       else console.warn(`알림 실패: ${ticket.message ?? ticket.details?.error}`);
     });
   }
-  return unregistered;
+  return { unregistered, tickets };
+}
+
+export interface PendingReceipt {
+  id: number;
+  device_id: string;
+  ticket_id: string;
+}
+
+export type ExpoReceipt = { status: 'ok' } | { status: 'error'; message?: string; details?: { error?: string } };
+
+// Pure step: notification ids grouped by the receipt value to store, and devices Apple/Google
+// no longer deliver to. Tickets Expo has no receipt for yet are left for the next run.
+export function planReceipts(pending: PendingReceipt[], receipts: Record<string, ExpoReceipt>) {
+  const byValue = new Map<string, number[]>();
+  const unregistered = new Set<string>();
+  for (const p of pending) {
+    const r = receipts[p.ticket_id];
+    if (!r) continue;
+    const value = r.status === 'ok' ? 'ok' : (r.details?.error ?? 'error');
+    byValue.set(value, [...(byValue.get(value) ?? []), p.id]);
+    if (value === 'DeviceNotRegistered') unregistered.add(p.device_id);
+  }
+  return { byValue, unregistered };
+}
+
+// Reads Expo push receipts for notifications sent 15 minutes to 24 hours ago (Expo keeps them ~24h).
+export async function checkReceipts(db: Db, now = new Date()): Promise<string> {
+  const ago = (minutes: number) => encodeURIComponent(new Date(now.getTime() - minutes * 60_000).toISOString());
+  const pending = await db.select<PendingReceipt>(
+    'notification',
+    `select=id,device_id,ticket_id&ticket_id=not.is.null&receipt=is.null` +
+      `&sent_at=lt.${ago(RECEIPT_DELAY_MINUTES)}&sent_at=gte.${ago(EVENT_WINDOW_HOURS * 60)}&order=id&limit=1000`,
+  );
+  if (pending.length === 0) return '확인할 발송 결과 없음';
+
+  const res = await fetch(EXPO_RECEIPTS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ ids: pending.map((p) => p.ticket_id) }),
+  });
+  if (!res.ok) throw new Error(`Expo Receipts HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const { data } = (await res.json()) as { data: Record<string, ExpoReceipt> };
+
+  const { byValue, unregistered } = planReceipts(pending, data);
+  for (const [receipt, ids] of byValue) await db.update('notification', `id=in.(${ids.join(',')})`, { receipt });
+  for (const id of unregistered) await db.delete('device', `id=eq.${id}`);
+
+  const failed = [...byValue].filter(([v]) => v !== 'ok').map(([v, ids]) => `${v} ${ids.length}`);
+  return `발송 결과 ${[...byValue.values()].flat().length}건 확인${failed.length ? ` (실패: ${failed.join(', ')})` : ''}, 해지된 기기 ${unregistered.size}개 정리`;
 }
