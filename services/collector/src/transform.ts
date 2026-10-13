@@ -12,6 +12,7 @@ export interface FacilityRow {
   lng: number | null;
   image_url: string | null;
   indoor: boolean | null;
+  surfaces: Surface[] | null;
 }
 
 export interface ListingDraft {
@@ -72,6 +73,20 @@ const COORDINATE_OVERRIDES: Record<string, { lat: number; lng: number }> = {
   손기정문화체육센터테니스장: { lat: 37.5557, lng: 126.9664 }, // 중구 손기정로 101
 };
 
+// Court surfaces guessed from the notice HTML and title ("코트종류 인조잔디 하드", "클레이코트 1면").
+// Bare "잔디" is skipped because notices also mention lawns ("소프트테니스장 잔디 및 시설물").
+export type Surface = 'hard' | 'clay' | 'grass';
+const SURFACE_PATTERNS: [Surface, RegExp][] = [
+  ['hard', /하드|우레탄|아크릴/],
+  ['clay', /클레이|앙투카|마사토/],
+  ['grass', /인조\s*잔디|잔디\s*코트|코트\s*\(\s*잔디/],
+];
+
+export function extractSurfaces(text: string): Surface[] {
+  const plain = text.replace(/<[^>]*>|&nbsp;/g, ' ');
+  return SURFACE_PATTERNS.filter(([, re]) => re.test(plain)).map(([s]) => s);
+}
+
 function toNumber(s: string | undefined): number | null {
   const n = Number(blank(s));
   return Number.isFinite(n) && n !== 0 ? n : null;
@@ -80,6 +95,7 @@ function toNumber(s: string | undefined): number | null {
 export function buildSnapshot(allRows: OpenApiRow[]): Snapshot {
   const facilities = new Map<string, FacilityRow>();
   const indoorFlags = new Map<string, Set<boolean | null>>();
+  const surfaces = new Map<string, Set<Surface>>();
   const courts = new Map<string, { facilityKey: string; label: string }>();
   const listings: ListingDraft[] = [];
 
@@ -98,9 +114,12 @@ export function buildSnapshot(allRows: OpenApiRow[]): Snapshot {
       lng: existing?.lng ?? toNumber(row.X) ?? COORDINATE_OVERRIDES[key]?.lng ?? null,
       image_url: existing?.image_url ?? blank(row.IMGURL),
       indoor: null,
+      surfaces: null,
     });
     if (!indoorFlags.has(key)) indoorFlags.set(key, new Set());
     indoorFlags.get(key)!.add(parsed.indoor);
+    if (!surfaces.has(key)) surfaces.set(key, new Set());
+    for (const s of extractSurfaces(`${row.SVCNM} ${row.DTLCONT ?? ''}`)) surfaces.get(key)!.add(s);
 
     if (parsed.courtLabel) courts.set(`${key}\u0000${parsed.courtLabel}`, { facilityKey: key, label: parsed.courtLabel });
 
@@ -127,6 +146,11 @@ export function buildSnapshot(allRows: OpenApiRow[]): Snapshot {
   // A facility is indoor/outdoor only when every listing's title agrees (계남 has both).
   for (const [key, flags] of indoorFlags) {
     if (flags.size === 1) facilities.get(key)!.indoor = [...flags][0];
+  }
+
+  // Fixed order (hard, clay, grass) so split icons always read the same way.
+  for (const [key, found] of surfaces) {
+    if (found.size) facilities.get(key)!.surfaces = SURFACE_PATTERNS.map(([s]) => s).filter((s) => found.has(s));
   }
 
   return { facilities: [...facilities.values()], courts: [...courts.values()], listings };

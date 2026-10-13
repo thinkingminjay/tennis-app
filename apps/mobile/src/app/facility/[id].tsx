@@ -10,7 +10,7 @@ import type { Listing } from '../../api';
 import { useData } from '../../data';
 import { RECEIVING, bandLabel, courtOrder, minutesAgo, period, receiptNote, tone } from '../../format';
 import { useColors } from '../../theme';
-import { Button, Card, Empty, Ionicons, SectionTitle, SourceFooter, Stat, StatusPill } from '../../ui';
+import { Button, Card, Empty, Ionicons, SURFACE_LABEL, SectionTitle, SourceFooter, Stat, StatusPill, SurfaceBall, surfaceColors } from '../../ui';
 
 const NO_COURT = '코트 구분 없음';
 
@@ -87,10 +87,19 @@ export default function FacilityDetail() {
           </View>
         ))}
 
-        {f.address || f.phone ? (
+        {f.address || f.phone || f.surfaces?.length ? (
           <>
             <SectionTitle>정보</SectionTitle>
             <Card style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
+              {f.surfaces?.length ? (
+                <View style={styles.info}>
+                  <SurfaceBall colors={surfaceColors(c, f.surfaces)} size={18} />
+                  <Text style={{ color: c.text, flex: 1 }}>
+                    바닥 {f.surfaces.map((x) => SURFACE_LABEL[x]).join(' · ')}
+                    <Text style={{ color: c.faint }}> (안내문 기준)</Text>
+                  </Text>
+                </View>
+              ) : null}
               {f.address ? <InfoLine icon="location-outline" text={f.address} /> : null}
               {f.phone ? <InfoLine icon="call-outline" text={f.phone} onPress={() => Linking.openURL(`tel:${f.phone!.split(',')[0]}`)} /> : null}
             </Card>

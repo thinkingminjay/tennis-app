@@ -10,7 +10,7 @@ import type { Facility, Listing } from '../../api';
 import { useData } from '../../data';
 import { EMPTY_FILTER, RECEIVING, UPCOMING, isFiltered, listingMatches, minutesAgo, type Filter } from '../../format';
 import { useColors } from '../../theme';
-import { Button, Chip, CountBadge, Empty, Ionicons, SourceFooter } from '../../ui';
+import { Button, Chip, CountBadge, Empty, Ionicons, SourceFooter, SurfaceBall, surfaceColors } from '../../ui';
 
 interface Row {
   facility: Facility;
@@ -173,7 +173,7 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
     >
       <View style={styles.cardMain}>
         <View style={[styles.thumb, { backgroundColor: open ? c.accentSoft : c.offSoft }]}>
-          <Ionicons name="tennisball" size={22} color={open ? c.accent : c.off} />
+          <SurfaceBall colors={surfaceColors(c, f.surfaces)} size={22} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
           <View style={styles.cardTop}>

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSnapshot, cleanPhone, diffEvents, toKstTimestamp } from '../src/transform.ts';
+import { buildSnapshot, cleanPhone, diffEvents, extractSurfaces, toKstTimestamp } from '../src/transform.ts';
 import type { OpenApiRow } from '../src/openApi.ts';
 
 const row = (over: Partial<OpenApiRow>): OpenApiRow => ({
@@ -89,4 +89,23 @@ test('phone keeps only real numbers', () => {
   assert.equal(cleanPhone('02-460-2983 // 주말 및 공휴일 02-460-2998'), '02-460-2983, 02-460-2998');
   assert.equal(cleanPhone('***, ***'), null);
   assert.equal(cleanPhone(' '), null);
+});
+
+test('extractSurfaces reads court types from notice text', () => {
+  assert.deepEqual(extractSurfaces('<td>코트종류</td><td>인조잔디</td><td>하드</td>'), ['hard', 'grass']);
+  assert.deepEqual(extractSurfaces('코 트 : 클레이코트 1면'), ['clay']);
+  assert.deepEqual(extractSurfaces('- 테니스코트(잔디) 2면'), ['grass']);
+  assert.deepEqual(extractSurfaces('잔디코트는 우천 후'), ['grass']);
+  assert.deepEqual(extractSurfaces('소프트테니스장 잔디 및 시설물 훼손 시'), []);
+});
+
+test('buildSnapshot merges surfaces per facility in fixed order', () => {
+  const snap = buildSnapshot([
+    row({ SVCID: 'A', DTLCONT: '클레이코트' }),
+    row({ SVCID: 'B', SVCNM: '10/1~10/15 장충테니스장 3번코트(평일주간)', DTLCONT: '하드코트' }),
+    row({ SVCID: 'C', SVCNM: '삼청테니스장 코트이용(평일)', PLACENM: '삼청테니스장' }),
+  ]);
+  const by = new Map(snap.facilities.map((f) => [f.name, f.surfaces]));
+  assert.deepEqual(by.get('장충테니스장'), ['hard', 'clay']);
+  assert.equal(by.get('삼청테니스장'), null);
 });

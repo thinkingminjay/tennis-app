@@ -21,6 +21,11 @@ const light = {
   off: '#8A8F94',
   offSoft: '#EEEFEE',
   danger: '#C0392B',
+  // Court surface colours for the home ball icon and map pins (split when a place has several).
+  courtHard: '#24387A',
+  courtClay: '#EF6C00',
+  courtGrass: '#2E8B57',
+  courtUnknown: '#9AA0A6',
 };
 
 const dark: typeof light = {
@@ -40,6 +45,10 @@ const dark: typeof light = {
   off: '#8E959A',
   offSoft: '#23272A',
   danger: '#F06A5B',
+  courtHard: '#5C7BD9',
+  courtClay: '#FF8F3D',
+  courtGrass: '#4CB97A',
+  courtUnknown: '#8E959A',
 };
 
 export type Colors = typeof light;

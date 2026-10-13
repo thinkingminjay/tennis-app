@@ -18,6 +18,7 @@ export interface OpenApiRow {
   AREANM: string;
   IMGURL: string;
   TELNO?: string;
+  DTLCONT?: string; // HTML notice text
 }
 
 const SERVICE = 'ListPublicReservationSport';

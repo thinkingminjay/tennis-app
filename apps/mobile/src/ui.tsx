@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { Surface } from './api';
 import { tone, type Tone } from './format';
 import { useColors, type Colors } from './theme';
 
@@ -101,6 +102,39 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
     <View style={s.sectionRow}>
       <Text style={[s.section, { color: c.text }]}>{children}</Text>
       {right}
+    </View>
+  );
+}
+
+export const SURFACE_LABEL: Record<Surface, string> = { hard: '하드', clay: '클레이', grass: '인조잔디' };
+
+// One colour per known surface, left to right; grey when the notice text names none.
+export function surfaceColors(c: Colors, surfaces: Surface[] | null): string[] {
+  const map: Record<Surface, string> = { hard: c.courtHard, clay: c.courtClay, grass: c.courtGrass };
+  return surfaces?.length ? surfaces.map((x) => map[x]) : [c.courtUnknown];
+}
+
+// Vertical colour bands behind a shape, e.g. hard + clay = left navy, right orange.
+export function SplitFill({ colors }: { colors: string[] }) {
+  return (
+    <View style={[StyleSheet.absoluteFill, { flexDirection: 'row' }]}>
+      {colors.map((color, i) => (
+        <View key={i} style={{ flex: 1, backgroundColor: color }} />
+      ))}
+    </View>
+  );
+}
+
+// The tennis ball glyph drawn once per colour, each copy clipped to its own vertical slice.
+export function SurfaceBall({ colors, size }: { colors: string[]; size: number }) {
+  const slice = size / colors.length;
+  return (
+    <View style={{ width: size, height: size }}>
+      {colors.map((color, i) => (
+        <View key={i} style={{ position: 'absolute', top: 0, left: i * slice, width: slice, height: size, overflow: 'hidden' }}>
+          <Ionicons name="tennisball" size={size} color={color} style={{ marginLeft: -i * slice }} />
+        </View>
+      ))}
     </View>
   );
 }

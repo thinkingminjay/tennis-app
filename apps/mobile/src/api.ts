@@ -1,6 +1,8 @@
 // Supabase access with the anon key: facilities/listings via REST, device/watch via the RPCs in
 // supabase/migrations/20261013010000_push.sql (the app identifies itself by its push token).
 
+export type Surface = 'hard' | 'clay' | 'grass';
+
 export interface Facility {
   id: string;
   name: string;
@@ -11,6 +13,7 @@ export interface Facility {
   lng: number | null;
   image_url: string | null;
   indoor: boolean | null;
+  surfaces: Surface[] | null; // guessed from the notice text by the collector
 }
 
 export interface Listing {
@@ -76,7 +79,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
 const rpc = <T>(fn: string, args: object) => request<T>(`rpc/${fn}`, args);
 
 export const fetchFacilities = () =>
-  request<Facility[]>('facility?select=id,name,district,address,phone,lat,lng,image_url,indoor&order=name');
+  request<Facility[]>('facility?select=id,name,district,address,phone,lat,lng,image_url,indoor,surfaces&order=name');
 
 export function fetchListings(): Promise<Listing[]> {
   const select =

@@ -1,4 +1,5 @@
-// 지도: a pin per facility, accent-coloured when it has a 접수중 listing. Tap a pin for a card, tap the card for detail.
+// 지도: a court-shaped pin per facility, coloured by court surface and faded when nothing is 접수중.
+// Tap a pin for a card, tap the card for detail.
 
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -8,9 +9,7 @@ import type { Facility } from '../../api';
 import { useData } from '../../data';
 import { RECEIVING } from '../../format';
 import { useColors } from '../../theme';
-import { Ionicons } from '../../ui';
-
-const OFF = '#9AA0A6';
+import { Ionicons, SplitFill, surfaceColors } from '../../ui';
 
 const SEOUL = { latitude: 37.5565, longitude: 126.9780, latitudeDelta: 0.32, longitudeDelta: 0.32 };
 
@@ -42,17 +41,25 @@ export default function MapTab() {
               setSelected(f);
             }}
           >
-            <CourtIcon color={openCount.get(f.id) ? c.accent : OFF} selected={selected?.id === f.id} />
+            <CourtIcon colors={surfaceColors(c, f.surfaces)} dim={!openCount.get(f.id)} selected={selected?.id === f.id} />
           </Marker>
         ))}
       </MapView>
 
       <View style={[styles.legend, { backgroundColor: c.card }]}>
-        <CourtIcon color={c.accent} />
-        <Text style={[styles.legendText, { color: c.text }]}>접수중 있음</Text>
-        <CourtIcon color={OFF} />
-        <Text style={[styles.legendText, { color: c.text }]}>없음</Text>
-        {missing ? <Text style={[styles.legendText, { color: c.sub }]}>· 위치 없음 {missing}곳</Text> : null}
+        <View style={styles.legendRow}>
+          <CourtIcon colors={[c.courtHard]} small />
+          <Text style={[styles.legendText, { color: c.text }]}>하드</Text>
+          <CourtIcon colors={[c.courtClay]} small />
+          <Text style={[styles.legendText, { color: c.text }]}>클레이</Text>
+          <CourtIcon colors={[c.courtGrass]} small />
+          <Text style={[styles.legendText, { color: c.text }]}>인조잔디</Text>
+          <CourtIcon colors={[c.courtUnknown]} small />
+          <Text style={[styles.legendText, { color: c.text }]}>모름</Text>
+        </View>
+        <Text style={[styles.legendText, { color: c.sub }]}>
+          흐린 핀은 접수중 없음{missing ? ` · 위치 없음 ${missing}곳` : ''}
+        </Text>
       </View>
 
       {selected ? (
@@ -87,11 +94,12 @@ export default function MapTab() {
   );
 }
 
-// A tiny top-down tennis court: coloured surface, white outline, net across the middle.
-function CourtIcon({ color, selected }: { color: string; selected?: boolean }) {
-  const scale = selected ? 1.3 : 1;
+// A tiny top-down tennis court: surface colours side by side, white outline, net across the middle.
+function CourtIcon({ colors, dim, selected, small }: { colors: string[]; dim?: boolean; selected?: boolean; small?: boolean }) {
+  const scale = selected ? 1.3 : small ? 0.6 : 1;
   return (
-    <View style={[styles.court, { backgroundColor: color, transform: [{ scale }] }]}>
+    <View style={[styles.court, { opacity: dim && !selected ? 0.45 : 1, transform: [{ scale }] }, small && styles.courtSmall]}>
+      <SplitFill colors={colors} />
       <View style={styles.courtLines}>
         <View style={styles.net} />
       </View>
@@ -100,19 +108,19 @@ function CourtIcon({ color, selected }: { color: string; selected?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  court: { width: 20, height: 30, borderRadius: 3, padding: 3, borderWidth: 1, borderColor: 'rgba(0,0,0,0.25)' },
+  court: { width: 20, height: 30, borderRadius: 3, padding: 3, borderWidth: 1, borderColor: 'rgba(0,0,0,0.25)', overflow: 'hidden' },
+  courtSmall: { marginHorizontal: -4, marginVertical: -6 },
+  legendRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   courtLines: { flex: 1, borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center' },
   net: { height: 1.5, backgroundColor: '#fff' },
   legend: {
     position: 'absolute',
     top: 12,
     left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: 14,
     shadowColor: '#000',
     shadowOpacity: 0.12,
     shadowRadius: 6,
