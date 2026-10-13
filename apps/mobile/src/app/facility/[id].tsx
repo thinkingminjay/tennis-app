@@ -62,7 +62,7 @@ export default function FacilityDetail() {
           <Text style={{ color: c.sub }}>
             {[f.district, `상품 ${listings.length}개`, open ? `접수중 ${open}개` : null].filter(Boolean).join(' · ')}
           </Text>
-          <Text style={[styles.meta, { color: c.faint }]}>{minutesAgo(updated)} · 시간대별 빈자리는 예약 화면에서 확인해 주세요</Text>
+          <Text style={[styles.meta, { color: c.faint }]}>{minutesAgo(updated)} · '접수중'은 접수 기간이라는 뜻이에요. 빈자리는 예약 화면 달력에서 확인해 주세요</Text>
         </View>
 
         {courts.map(([label, items]) => (

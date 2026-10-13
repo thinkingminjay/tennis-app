@@ -10,6 +10,8 @@ import { RECEIVING } from '../../format';
 import { useColors } from '../../theme';
 import { CountBadge, Ionicons } from '../../ui';
 
+const OFF = '#9AA0A6';
+
 const SEOUL = { latitude: 37.5565, longitude: 126.9780, latitudeDelta: 0.32, longitudeDelta: 0.32 };
 
 export default function MapTab() {
@@ -31,21 +33,24 @@ export default function MapTab() {
       <MapView style={StyleSheet.absoluteFill} initialRegion={SEOUL} showsUserLocation={false} onPress={() => setSelected(null)}>
         {pinned.map((f) => (
           <Marker
-            key={f.id}
+            key={selected?.id === f.id ? `${f.id}-on` : f.id}
             coordinate={{ latitude: f.lat!, longitude: f.lng! }}
-            pinColor={openCount.get(f.id) ? c.accent : '#9AA0A6'}
+            anchor={{ x: 0.5, y: 0.5 }}
+            tracksViewChanges={false}
             onPress={(e) => {
               e.stopPropagation();
               setSelected(f);
             }}
-          />
+          >
+            <CourtIcon color={openCount.get(f.id) ? c.accent : OFF} selected={selected?.id === f.id} />
+          </Marker>
         ))}
       </MapView>
 
       <View style={[styles.legend, { backgroundColor: c.bg }]}>
-        <View style={[styles.dot, { backgroundColor: c.accent }]} />
+        <CourtIcon color={c.accent} />
         <Text style={[styles.legendText, { color: c.text }]}>접수중 있음</Text>
-        <View style={[styles.dot, { backgroundColor: '#9AA0A6' }]} />
+        <CourtIcon color={OFF} />
         <Text style={[styles.legendText, { color: c.text }]}>없음</Text>
         {missing ? <Text style={[styles.legendText, { color: c.sub }]}>· 위치 없음 {missing}곳</Text> : null}
       </View>
@@ -69,7 +74,22 @@ export default function MapTab() {
   );
 }
 
+// A tiny top-down tennis court: coloured surface, white outline, net across the middle.
+function CourtIcon({ color, selected }: { color: string; selected?: boolean }) {
+  const scale = selected ? 1.5 : 1;
+  return (
+    <View style={[styles.court, { backgroundColor: color, transform: [{ scale }] }]}>
+      <View style={styles.courtLines}>
+        <View style={styles.net} />
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  court: { width: 12, height: 18, borderRadius: 2, padding: 2, borderWidth: 1, borderColor: 'rgba(0,0,0,0.25)' },
+  courtLines: { flex: 1, borderWidth: 1, borderColor: '#fff', justifyContent: 'center' },
+  net: { height: 1, backgroundColor: '#fff' },
   legend: {
     position: 'absolute',
     top: 12,
@@ -86,7 +106,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
   },
-  dot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { fontSize: 12 },
   card: {
     position: 'absolute',

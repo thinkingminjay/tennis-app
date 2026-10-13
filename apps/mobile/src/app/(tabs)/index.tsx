@@ -62,6 +62,17 @@ export default function Home() {
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {isFiltered(filter) ? (
+          <Pressable
+            onPress={() => setFilter(EMPTY_FILTER)}
+            accessibilityRole="button"
+            accessibilityLabel="필터 초기화"
+            style={({ pressed }) => [styles.reset, { borderColor: c.border, opacity: pressed ? 0.6 : 1 }]}
+          >
+            <Ionicons name="refresh" size={15} color={c.text} />
+            <Text style={{ color: c.text, fontSize: 14, fontWeight: '500' }}>초기화</Text>
+          </Pressable>
+        ) : null}
         <Chip label="접수중만" selected={filter.open} onPress={() => set({ open: !filter.open })} />
         <Chip
           label={filter.districts.length ? `${filter.districts[0]}${filter.districts.length > 1 ? ` 외 ${filter.districts.length - 1}` : ''}` : '지역'}
@@ -180,6 +191,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: '800' },
   meta: { fontSize: 13 },
   chips: { gap: 8, paddingHorizontal: 16, paddingBottom: 12 },
+  reset: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, height: 34, borderRadius: 999, borderWidth: 1 },
   error: { paddingHorizontal: 20, paddingBottom: 8 },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingBottom: 10 },
   card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16 },
