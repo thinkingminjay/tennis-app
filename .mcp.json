@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "lazyweb": {
+      "type": "http",
+      "url": "https://www.lazyweb.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${LAZYWEB_TOKEN}"
+      }
+    },
+    "inspo": {
+      "type": "http",
+      "url": "https://inspomcp.dev/api/mcp"
+    }
+  }
+}

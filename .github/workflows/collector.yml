@@ -1,0 +1,34 @@
+name: collector
+
+on:
+  schedule:
+    # Every 30 minutes (UTC). GitHub may delay scheduled runs by several minutes under load.
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+# Never run two collections at once; a late run waits for the previous one.
+concurrency:
+  group: collector
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Test
+        run: npm test --prefix packages/shared && npm test --prefix services/collector
+      - name: Collect
+        run: npm start --prefix services/collector
+        env:
+          SEOUL_OPENAPI_KEY: ${{ secrets.SEOUL_OPENAPI_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          COLLECTOR_CONTACT_EMAIL: ${{ secrets.COLLECTOR_CONTACT_EMAIL }}

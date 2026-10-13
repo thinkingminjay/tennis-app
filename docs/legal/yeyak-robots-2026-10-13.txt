@@ -1,0 +1,12 @@
+# 원문: https://yeyak.seoul.go.kr/robots.txt (수집 2026-10-13)
+User-agent: Googlebot
+
+Disallow: /web/search/selectPageListTotalSearch.do
+
+Disallow: /web/search/selectPageListDetailSearch.do
+
+Disallow: /web/search/selectPageListDetailSearchImg.do
+
+
+User-agent: *
+Disallow: /web/bbs/selectPageListBbs.do
