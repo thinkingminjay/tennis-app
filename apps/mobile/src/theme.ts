@@ -1,6 +1,7 @@
 import { useColorScheme } from 'react-native';
 
-// docs/DESIGN.md: bright and clean, one accent for 접수중, grey for closed states, dark mode.
+// docs/DESIGN.md: bright and clean, one orange accent for 접수중, blue for 안내중, grey for closed
+// states, dark mode.
 // Screens sit on a light grey `page` with white `card` groups (pattern from Korean booking and
 // settings screens on uibowl); `surface` is the subtle fill used inside a card.
 const light = {
@@ -12,11 +13,11 @@ const light = {
   text: '#16181A',
   sub: '#6B7075',
   faint: '#9AA0A6',
-  accent: '#1F7A4D',
-  accentSoft: '#E3F2EA',
+  accent: '#EF6C00',
+  accentSoft: '#FFF0E3',
   onAccent: '#FFFFFF',
-  soon: '#9A6200',
-  soonSoft: '#FCF1DC',
+  soon: '#2F6BCC',
+  soonSoft: '#E6EEFB',
   off: '#8A8F94',
   offSoft: '#EEEFEE',
   danger: '#C0392B',
@@ -31,11 +32,11 @@ const dark: typeof light = {
   text: '#F1F3F4',
   sub: '#A3A9AE',
   faint: '#6F767C',
-  accent: '#3DBB7A',
-  accentSoft: '#173426',
-  onAccent: '#06140C',
-  soon: '#F0B54A',
-  soonSoft: '#3A2C10',
+  accent: '#FF8F3D',
+  accentSoft: '#3A2312',
+  onAccent: '#1A0C02',
+  soon: '#7AA8F0',
+  soonSoft: '#172540',
   off: '#8E959A',
   offSoft: '#23272A',
   danger: '#F06A5B',

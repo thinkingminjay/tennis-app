@@ -1,4 +1,4 @@
-// 지도: a pin per facility, green when it has a 접수중 listing. Tap a pin for a card, tap the card for detail.
+// 지도: a pin per facility, accent-coloured when it has a 접수중 listing. Tap a pin for a card, tap the card for detail.
 
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
