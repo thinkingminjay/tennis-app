@@ -31,7 +31,8 @@ export default function RootLayout() {
   );
 }
 
-// Tapping a single-event notification opens that listing's booking page; a bundled one opens the 알림 tab.
+// Tapping a single-event notification opens that listing's booking page, a bundle about one facility
+// opens that facility, and any other bundle opens the 알림 tab.
 function NotificationOpener() {
   const response = Notifications.useLastNotificationResponse();
   const handled = useRef<string | null>(null);
@@ -42,9 +43,11 @@ function NotificationOpener() {
     if (handled.current === id) return;
     handled.current = id;
     const { content } = response.notification.request;
-    const url = content.data?.url;
+    const { url, facilityId } = content.data ?? {};
     if (typeof url === 'string') {
       router.push({ pathname: '/booking', params: { url, title: content.title ?? '' } });
+    } else if (typeof facilityId === 'string') {
+      router.push(`/facility/${facilityId}`);
     } else {
       router.navigate('/alerts');
     }

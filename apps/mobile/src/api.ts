@@ -53,6 +53,7 @@ export interface SentNotification {
   id: number;
   title: string;
   body: string;
+  svc_ids: string[];
   url: string | null;
   sent_at: string;
 }

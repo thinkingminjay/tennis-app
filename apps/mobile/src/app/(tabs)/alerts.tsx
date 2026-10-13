@@ -1,7 +1,7 @@
 // 알림 탭: this device's watch conditions (on/off, edit) and the history of sent notifications.
 
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { myNotifications, type SentNotification } from '../../api';
 import { useData } from '../../data';
@@ -11,9 +11,23 @@ import { Button, Card, Empty, Ionicons, SectionTitle } from '../../ui';
 
 export default function AlertsTab() {
   const c = useColors();
-  const { token, push, enablePush, watches, facilityById, upsertWatch, reloadWatches } = useData();
+  const { token, push, enablePush, watches, facilityById, listingsByFacility, upsertWatch, reloadWatches } = useData();
   const [history, setHistory] = useState<SentNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+
+  const facilityOf = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const [facilityId, ls] of listingsByFacility) for (const l of ls) m.set(l.svc_id, facilityId);
+    return m;
+  }, [listingsByFacility]);
+
+  // Same targets as tapping the push itself: the booking page, else the one facility it is about.
+  function open(n: SentNotification) {
+    if (n.url) return router.push({ pathname: '/booking', params: { url: n.url, title: n.title } });
+    const ids = new Set(n.svc_ids.map((s) => facilityOf.get(s)));
+    const [id] = ids;
+    if (ids.size === 1 && id) router.push(`/facility/${id}`);
+  }
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -93,8 +107,7 @@ export default function AlertsTab() {
           {history.map((n, i) => (
             <Pressable
               key={n.id}
-              disabled={!n.url}
-              onPress={() => router.push({ pathname: '/booking', params: { url: n.url!, title: n.title } })}
+              onPress={() => open(n)}
               style={({ pressed }) => [
                 styles.item,
                 { borderTopColor: c.border, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: pressed ? 0.6 : 1 },

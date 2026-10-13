@@ -80,17 +80,18 @@ test('planNotifications: bundles per device, holds during quiet hours, skips see
   assert.deepEqual(planNotifications([device({ last_event_id: 7 })], [watch()], events, noon), []);
 });
 
-test('buildMessage: single event links to the booking page, bundles summarize', () => {
+test('buildMessage: single event links to the booking page, bundles summarize and link one facility', () => {
   const one = buildMessage('T', [event(1)]);
   assert.equal(one.title, '장충테니스장 1번');
   assert.equal(one.body, '접수 시작 · 주말 주간 · 11-01~11-30');
-  assert.equal(one.data.url, 'https://example.test/1');
+  assert.deepEqual(one.data, { url: 'https://example.test/1', facilityId: 'F1' });
 
   const many = buildMessage('T', [event(1), event(2, {}, 'new_listing'), event(3), event(4)]);
   assert.equal(many.title, '관심 테니스장 소식 4건');
   assert.equal(many.body.split('\n').length, 4);
   assert.match(many.body, /외 1건$/);
-  assert.deepEqual(many.data, {});
+  assert.deepEqual(many.data, { facilityId: 'F1' });
+  assert.deepEqual(buildMessage('T', [event(1), event(2, { facility_id: 'F2' })]).data, {});
 });
 
 test('planNotifications: never pushes events of facilities not bookable online', () => {

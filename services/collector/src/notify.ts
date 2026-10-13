@@ -47,7 +47,7 @@ export interface PushMessage {
   title: string;
   body: string;
   sound: 'default';
-  data: { url?: string };
+  data: { url?: string; facilityId?: string };
 }
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
@@ -117,12 +117,15 @@ export function buildMessage(token: string, events: EventRow[]): PushMessage {
       title: place(e),
       body: [describe(e), tags, period].filter(Boolean).join(' · '),
       sound: 'default',
-      data: l.url ? { url: l.url } : {},
+      data: l.url ? { url: l.url, facilityId: l.facility_id } : { facilityId: l.facility_id },
     };
   }
   const lines = events.slice(0, 3).map((e) => `${place(e)} ${describe(e)}`);
   if (events.length > 3) lines.push(`외 ${events.length - 3}건`);
-  return { to: token, title: `관심 테니스장 소식 ${events.length}건`, body: lines.join('\n'), sound: 'default', data: {} };
+  // A bundle about one facility opens that facility; a mixed bundle opens the 알림 tab.
+  const facilities = new Set(events.map((e) => e.listing.facility_id));
+  const data = facilities.size === 1 ? { facilityId: events[0].listing.facility_id } : {};
+  return { to: token, title: `관심 테니스장 소식 ${events.length}건`, body: lines.join('\n'), sound: 'default', data };
 }
 
 // Pure planning step: which message each device gets and where its cursor moves.
