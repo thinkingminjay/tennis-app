@@ -53,6 +53,24 @@ export interface PushMessage {
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 const EVENT_WINDOW_HOURS = 24; // never deliver events older than this (e.g. a device that was quiet for long)
 
+// Facilities the user confirmed are closed or not bookable online on the Seoul booking site;
+// their listings stay in the open API, so their events are never pushed. Keyed by name without spaces.
+// Keep in sync with OFFLINE_FACILITIES in apps/mobile/src/format.ts.
+const OFFLINE_FACILITIES = new Set([
+  '월곡테니스장',
+  '정릉테니스장',
+  '난지한강공원테니스장',
+  '난지물재생센터테니스장',
+  '손기정문화체육센터테니스장',
+  '동부도로사업소테니스장',
+  '남부도로사업소테니스장',
+  '현저테니스장',
+  '홍은테니스장',
+  '다락원체육공원테니스장',
+]);
+
+export const isOfflineEvent = (e: EventRow) => OFFLINE_FACILITIES.has(e.listing.facility.name.replace(/\s/g, ''));
+
 const any = (list: string[] | null) => !list || list.length === 0;
 
 // Unparsed (null) or mixed ('혼합') day/time values match any filter so alerts are not missed.
@@ -114,7 +132,9 @@ export function planNotifications(devices: DeviceRow[], watches: WatchRow[], eve
   for (const device of devices) {
     if (inQuietHours(device, now) || maxId <= device.last_event_id) continue;
     const mine = watches.filter((w) => w.device_id === device.id);
-    const matched = events.filter((e) => e.id > device.last_event_id && mine.some((w) => matchesWatch(w, e)));
+    const matched = events.filter(
+      (e) => e.id > device.last_event_id && !isOfflineEvent(e) && mine.some((w) => matchesWatch(w, e)),
+    );
     plans.push({ device, events: matched, cursor: maxId });
   }
   return plans;

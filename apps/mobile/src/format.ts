@@ -3,6 +3,24 @@ import type { Listing, Watch, EventKind, Facility } from './api';
 export const RECEIVING = '접수중';
 export const UPCOMING = '안내중';
 
+// Facilities the user confirmed are closed or not bookable online on the Seoul booking site,
+// though their listings stay in the open API. Keyed by name without spaces.
+// Keep in sync with OFFLINE_FACILITIES in services/collector/src/notify.ts.
+const OFFLINE_FACILITIES = new Set([
+  '월곡테니스장',
+  '정릉테니스장',
+  '난지한강공원테니스장',
+  '난지물재생센터테니스장',
+  '손기정문화체육센터테니스장',
+  '동부도로사업소테니스장',
+  '남부도로사업소테니스장',
+  '현저테니스장',
+  '홍은테니스장',
+  '다락원체육공원테니스장',
+]);
+
+export const isOffline = (f: Pick<Facility, 'name'>) => OFFLINE_FACILITIES.has(f.name.replace(/\s/g, ''));
+
 export type Tone = 'open' | 'soon' | 'off';
 
 export function tone(status: string | null): Tone {

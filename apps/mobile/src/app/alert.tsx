@@ -7,7 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { EventKind } from '../api';
 import { useData } from '../data';
-import { ALL_EVENTS, EVENT_LABEL, courtOrder } from '../format';
+import { ALL_EVENTS, EVENT_LABEL, courtOrder, isOffline } from '../format';
 import { useColors } from '../theme';
 import { Button, Chip, Ionicons, SectionTitle } from '../ui';
 
@@ -42,9 +42,10 @@ export default function AlertEditor() {
     return [...m.entries()].sort(([, a], [, b]) => courtOrder(a, b));
   }, [facilityIds, listingsByFacility]);
 
+  const bookable = facilities.filter((f) => !isOffline(f));
   const matches = query.trim()
-    ? facilities.filter((f) => f.name.includes(query.trim()) || f.district?.includes(query.trim()))
-    : facilities;
+    ? bookable.filter((f) => f.name.includes(query.trim()) || f.district?.includes(query.trim()))
+    : bookable;
 
   function setFacilities(next: string[]) {
     setFacilityIds(next);

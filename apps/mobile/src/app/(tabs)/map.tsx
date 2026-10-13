@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import type { Facility } from '../../api';
 import { useData } from '../../data';
-import { RECEIVING } from '../../format';
+import { RECEIVING, isOffline } from '../../format';
 import { useColors } from '../../theme';
 import { Ionicons, SplitFill, surfaceColors } from '../../ui';
 
@@ -20,7 +20,9 @@ export default function MapTab() {
 
   const openCount = useMemo(() => {
     const m = new Map<string, number>();
-    for (const f of facilities) m.set(f.id, (listingsByFacility.get(f.id) ?? []).filter((l) => l.status === RECEIVING).length);
+    for (const f of facilities) {
+      m.set(f.id, isOffline(f) ? 0 : (listingsByFacility.get(f.id) ?? []).filter((l) => l.status === RECEIVING).length);
+    }
     return m;
   }, [facilities, listingsByFacility]);
 
@@ -76,13 +78,17 @@ export default function MapTab() {
           </View>
           <View style={styles.cardFoot}>
             <View style={[styles.ratio, { backgroundColor: c.surface }]}>
-              <Text style={{ color: c.sub, fontSize: 13 }}>
-                접수중{' '}
-                <Text style={{ color: openCount.get(selected.id) ? c.accentText : c.sub, fontWeight: '700' }}>
-                  {openCount.get(selected.id) ?? 0}
+              {isOffline(selected) ? (
+                <Text style={{ color: c.sub, fontSize: 13 }}>온라인 예약 불가</Text>
+              ) : (
+                <Text style={{ color: c.sub, fontSize: 13 }}>
+                  접수중{' '}
+                  <Text style={{ color: openCount.get(selected.id) ? c.accentText : c.sub, fontWeight: '700' }}>
+                    {openCount.get(selected.id) ?? 0}
+                  </Text>
+                  <Text style={{ color: c.faint }}>/{(listingsByFacility.get(selected.id) ?? []).length}</Text>
                 </Text>
-                <Text style={{ color: c.faint }}>/{(listingsByFacility.get(selected.id) ?? []).length}</Text>
-              </Text>
+              )}
             </View>
             <View style={[styles.more, { backgroundColor: c.accent }]}>
               <Text style={{ color: c.onAccent, fontSize: 13, fontWeight: '700' }}>상세 보기</Text>

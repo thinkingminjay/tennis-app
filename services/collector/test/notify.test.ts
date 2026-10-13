@@ -92,3 +92,11 @@ test('buildMessage: single event links to the booking page, bundles summarize', 
   assert.match(many.body, /외 1건$/);
   assert.deepEqual(many.data, {});
 });
+
+test('planNotifications: never pushes events of facilities not bookable online', () => {
+  const noon = new Date('2026-10-20T03:00:00Z');
+  const events = [event(5, { facility: { name: '홍은 테니스장' } }), event(6)];
+  const [plan] = planNotifications([device()], [watch()], events, noon);
+  assert.deepEqual(plan.events.map((e) => e.id), [6]);
+  assert.equal(plan.cursor, 6);
+});

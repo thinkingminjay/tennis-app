@@ -8,7 +8,7 @@ import { FlatList, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Facility, Listing } from '../../api';
 import { useData } from '../../data';
-import { EMPTY_FILTER, RECEIVING, UPCOMING, isFiltered, listingMatches, minutesAgo, type Filter } from '../../format';
+import { EMPTY_FILTER, RECEIVING, UPCOMING, isFiltered, isOffline, listingMatches, minutesAgo, type Filter } from '../../format';
 import { useColors } from '../../theme';
 import { Button, Chip, CountBadge, Empty, Hatch, Ionicons, SURFACE_LABEL, SourceFooter, SurfaceBall, surfaceColors } from '../../ui';
 
@@ -17,6 +17,7 @@ interface Row {
   listings: Listing[];
   open: number;
   soon: number;
+  offline: boolean;
 }
 
 export default function Home() {
@@ -24,6 +25,7 @@ export default function Home() {
   const { facilities, listingsByFacility, updatedAt, loading, error, reload, favorites, simpleWatch } = useData();
   const [filter, setFilter] = useState<Filter>(EMPTY_FILTER);
   const [districtsOpen, setDistrictsOpen] = useState(false);
+  const [offlineOpen, setOfflineOpen] = useState(false);
 
   const districts = useMemo(
     () => [...new Set(facilities.map((f) => f.district).filter((d): d is string => !!d))].sort((a, b) => a.localeCompare(b, 'ko')),
@@ -35,13 +37,16 @@ export default function Home() {
     for (const f of facilities) {
       if (filter.districts.length && !filter.districts.includes(f.district ?? '')) continue;
       const all = listingsByFacility.get(f.id) ?? [];
-      const listings = all.filter((l) => listingMatches(l, filter));
+      const offline = isOffline(f);
+      // Offline facilities never count as 접수중, so the 접수중만 chip drops them.
+      const listings = all.filter((l) => listingMatches(l, filter) && !(offline && filter.open));
       if (isFiltered(filter) && listings.length === 0) continue;
       out.push({
         facility: f,
         listings,
-        open: listings.filter((l) => l.status === RECEIVING).length,
-        soon: listings.filter((l) => l.status === UPCOMING).length,
+        open: offline ? 0 : listings.filter((l) => l.status === RECEIVING).length,
+        soon: offline ? 0 : listings.filter((l) => l.status === UPCOMING).length,
+        offline,
       });
     }
     return out.sort(
@@ -52,7 +57,9 @@ export default function Home() {
     );
   }, [facilities, listingsByFacility, filter, favorites]);
 
-  const openFacilities = rows.filter((r) => r.open > 0).length;
+  const online = rows.filter((r) => !r.offline);
+  const offline = rows.filter((r) => r.offline);
+  const openFacilities = online.filter((r) => r.open > 0).length;
   const set = (patch: Partial<Filter>) => setFilter((f) => ({ ...f, ...patch }));
 
   return (
@@ -91,7 +98,7 @@ export default function Home() {
       {error ? <Text style={[styles.error, { color: c.danger }]}>{error}</Text> : null}
 
       <FlatList
-        data={rows}
+        data={online}
         keyExtractor={(r) => r.facility.id}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={reload} />}
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8 }}
@@ -110,10 +117,10 @@ export default function Home() {
           )
         }
         ListHeaderComponent={
-          rows.length ? (
+          online.length ? (
             <View style={styles.resultRow}>
               <Text style={{ color: c.sub, fontSize: 13 }}>
-                총 <Text style={{ color: c.text, fontWeight: '700' }}>{rows.length}</Text>곳
+                총 <Text style={{ color: c.text, fontWeight: '700' }}>{online.length}</Text>곳
                 {openFacilities ? (
                   <Text>
                     {' · 접수중 '}
@@ -129,7 +136,39 @@ export default function Home() {
             </View>
           ) : null
         }
-        ListFooterComponent={<SourceFooter />}
+        ListFooterComponent={
+          <>
+            {offline.length ? (
+              <View style={styles.offline}>
+                <Pressable
+                  onPress={() => setOfflineOpen((v) => !v)}
+                  style={styles.offlineHead}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: offlineOpen }}
+                >
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ color: c.text, fontSize: 15, fontWeight: '700' }}>
+                      온라인 예약 불가 <Text style={{ color: c.sub, fontWeight: '500' }}>{offline.length}곳</Text>
+                    </Text>
+                    <Text style={{ color: c.sub, fontSize: 12 }}>서울시 공공서비스 예약에서 종료됐거나 온라인 예약이 안 되는 곳</Text>
+                  </View>
+                  <Ionicons name={offlineOpen ? 'chevron-up' : 'chevron-down'} size={18} color={c.sub} />
+                </Pressable>
+                {offlineOpen
+                  ? offline.map((r) => (
+                      <FacilityCard
+                        key={r.facility.id}
+                        row={r}
+                        favorite={favorites.has(r.facility.id)}
+                        watching={!!simpleWatch(r.facility.id)}
+                      />
+                    ))
+                  : null}
+              </View>
+            ) : null}
+            <SourceFooter />
+          </>
+        }
       />
 
       <Modal visible={districtsOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setDistrictsOpen(false)}>
@@ -164,13 +203,13 @@ const THUMB = 44;
 
 function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean; watching: boolean }) {
   const c = useColors();
-  const { facility: f, listings, open, soon } = row;
+  const { facility: f, listings, open, soon, offline } = row;
   const free = listings.some((l) => l.paid === false);
   const paid = listings.some((l) => l.paid !== false);
   return (
     <Pressable
       onPress={() => router.push(`/facility/${f.id}`)}
-      style={({ pressed }) => [styles.card, { backgroundColor: c.card, opacity: pressed ? 0.85 : 1 }]}
+      style={({ pressed }) => [styles.card, { backgroundColor: c.card, opacity: pressed ? 0.85 : offline ? 0.7 : 1 }]}
       accessibilityRole="button"
     >
       <View style={styles.cardMain}>
@@ -197,11 +236,15 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
         <Ionicons name="chevron-forward" size={18} color={c.faint} />
       </View>
       <View style={[styles.cardFoot, { borderTopColor: c.border }]}>
-        <Text style={[styles.meta, { color: c.sub }]}>
-          접수중{' '}
-          <Text style={{ color: open ? c.accentText : c.sub, fontWeight: '700' }}>{open}</Text>
-          <Text style={{ color: c.faint }}> / {listings.length}</Text>
-        </Text>
+        {offline ? (
+          <Text style={[styles.meta, { color: c.sub }]}>온라인 예약 불가</Text>
+        ) : (
+          <Text style={[styles.meta, { color: c.sub }]}>
+            접수중{' '}
+            <Text style={{ color: open ? c.accentText : c.sub, fontWeight: '700' }}>{open}</Text>
+            <Text style={{ color: c.faint }}> / {listings.length}</Text>
+          </Text>
+        )}
         {soon ? <CountBadge status={UPCOMING} count={soon} /> : null}
       </View>
     </Pressable>
@@ -231,6 +274,8 @@ const styles = StyleSheet.create({
   ballBack: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
+  offline: { gap: 10, marginTop: 24 },
+  offlineHead: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4, paddingVertical: 4 },
   sheet: { flex: 1 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20 },
   sheetTitle: { fontSize: 20, fontWeight: '700' },

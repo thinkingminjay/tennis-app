@@ -8,7 +8,7 @@ import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Listing } from '../../api';
 import { useData } from '../../data';
-import { RECEIVING, bandLabel, courtOrder, minutesAgo, period, receiptNote, tone } from '../../format';
+import { RECEIVING, bandLabel, courtOrder, isOffline, minutesAgo, period, receiptNote, tone } from '../../format';
 import { useColors } from '../../theme';
 import { Button, Card, Empty, Ionicons, SURFACE_LABEL, SectionTitle, SourceFooter, Stat, StatusPill, SurfaceBall, surfaceColors } from '../../ui';
 
@@ -38,7 +38,8 @@ export default function FacilityDetail() {
   const favorite = favorites.has(f.id);
   const watching = !!simpleWatch(f.id);
   const updated = listings.reduce<string | undefined>((a, l) => (!a || l.updated_at > a ? l.updated_at : a), undefined);
-  const open = listings.filter((l) => l.status === RECEIVING).length;
+  const offline = isOffline(f);
+  const open = offline ? 0 : listings.filter((l) => l.status === RECEIVING).length;
   const free = listings.some((l) => l.paid === false);
   const paid = listings.some((l) => l.paid !== false);
 
@@ -63,14 +64,16 @@ export default function FacilityDetail() {
           <Text style={[styles.district, { color: c.sub }]}>{f.district ?? '서울'}</Text>
           <Text style={[styles.name, { color: c.text }]}>{f.name}</Text>
           <View style={styles.stats}>
-            <Stat label="접수중" value={`${open}개`} accent={open > 0} />
+            <Stat label="접수중" value={offline ? '-' : `${open}개`} accent={open > 0} />
             <Stat label="전체 상품" value={`${listings.length}개`} />
             <Stat label="요금" value={free && paid ? '무료·유료' : free ? '무료' : '유료'} />
           </View>
           <View style={[styles.notice, { backgroundColor: c.surface }]}>
             <Ionicons name="information-circle" size={16} color={c.sub} style={{ marginTop: 1 }} />
             <Text style={[styles.noticeText, { color: c.sub }]}>
-              ‘접수중’은 접수 기간이라는 뜻이에요. 빈자리는 예약 화면 달력에서 확인해 주세요.
+              {offline
+                ? '서울시 공공서비스 예약에서 종료됐거나 온라인 예약이 안 되는 곳이에요. 아래는 공개 데이터에 남아 있는 정보라 실제와 다를 수 있어요.'
+                : '‘접수중’은 접수 기간이라는 뜻이에요. 빈자리는 예약 화면 달력에서 확인해 주세요.'}
             </Text>
           </View>
           <Text style={[styles.meta, { color: c.faint, marginTop: 8 }]}>{minutesAgo(updated)}</Text>
@@ -81,7 +84,7 @@ export default function FacilityDetail() {
             <SectionTitle right={<Text style={[styles.meta, { color: c.sub }]}>{items.length}개</Text>}>{label}</SectionTitle>
             <Card>
               {items.map((l, i) => (
-                <ListingRow key={l.svc_id} listing={l} first={i === 0} />
+                <ListingRow key={l.svc_id} listing={l} first={i === 0} offline={offline} />
               ))}
             </Card>
           </View>
@@ -109,29 +112,31 @@ export default function FacilityDetail() {
         <SourceFooter />
       </ScrollView>
 
-      <SafeAreaView edges={['bottom']} style={[styles.bottom, { borderTopColor: c.border, backgroundColor: c.card }]}>
-        <Button
-          label={watching ? '알림 받는 중' : '이 테니스장 알림 받기'}
-          icon={watching ? 'notifications' : 'notifications-outline'}
-          kind={watching ? 'secondary' : 'primary'}
-          disabled={push !== 'ready'}
-          onPress={() => toggleSimpleWatch(f.id)}
-          style={{ flex: 1 }}
-        />
-        <Button
-          label="조건 설정"
-          kind="secondary"
-          disabled={push !== 'ready'}
-          onPress={() => router.push({ pathname: '/alert', params: { facility: f.id } })}
-        />
-      </SafeAreaView>
+      {offline ? null : (
+        <SafeAreaView edges={['bottom']} style={[styles.bottom, { borderTopColor: c.border, backgroundColor: c.card }]}>
+          <Button
+            label={watching ? '알림 받는 중' : '이 테니스장 알림 받기'}
+            icon={watching ? 'notifications' : 'notifications-outline'}
+            kind={watching ? 'secondary' : 'primary'}
+            disabled={push !== 'ready'}
+            onPress={() => toggleSimpleWatch(f.id)}
+            style={{ flex: 1 }}
+          />
+          <Button
+            label="조건 설정"
+            kind="secondary"
+            disabled={push !== 'ready'}
+            onPress={() => router.push({ pathname: '/alert', params: { facility: f.id } })}
+          />
+        </SafeAreaView>
+      )}
     </View>
   );
 }
 
-function ListingRow({ listing: l, first }: { listing: Listing; first: boolean }) {
+function ListingRow({ listing: l, first, offline }: { listing: Listing; first: boolean; offline: boolean }) {
   const c = useColors();
-  const active = tone(l.status) !== 'off';
+  const active = !offline && tone(l.status) !== 'off';
   const note = receiptNote(l);
   return (
     <Pressable
@@ -153,7 +158,7 @@ function ListingRow({ listing: l, first }: { listing: Listing; first: boolean })
           {[l.paid === false ? '무료' : l.price_note, note].filter(Boolean).join(' · ') || l.title}
         </Text>
       </View>
-      <StatusPill status={l.status} />
+      {offline ? null : <StatusPill status={l.status} />}
       <Ionicons name="open-outline" size={16} color={c.faint} />
     </Pressable>
   );
