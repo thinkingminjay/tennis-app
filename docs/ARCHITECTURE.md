@@ -83,7 +83,9 @@ create table device (
 1. 수집기가 오픈API를 주기적으로 1회 호출(1000건 페이지, 순차, 1초에 1건 이하)해 `MINCLASSNM=테니스장`만 남긴다.
 2. 상품명을 파싱해 facility·court·listing을 upsert한다.
 3. 이전 값과 비교해 새 상품, 접수 시작(RCPTBGNDT 도달·상태가 접수중으로), 상태 변화를 `listing_event`에 쌓는다.
-4. 이벤트에 맞는 `watch`를 찾아 Expo Push를 보낸다(방해금지·10분 묶음 규칙 적용). (미구현)
+4. 이벤트에 맞는 `watch`를 찾아 Expo Push를 보낸다(`services/collector/src/notify.ts`). 기기마다 `device.last_event_id` 커서 이후 이벤트를 한 번에 묶어 1건만 보낸다(실행 주기 = 묶음 단위). 방해금지 시간(KST)에는 커서를 움직이지 않아 끝난 뒤 첫 실행에 모아서 보내고, 24시간이 지난 이벤트는 보내지 않는다. 보낸 알림은 `notification`에 남기고, Expo가 `DeviceNotRegistered`를 돌려주면 기기를 지운다.
+
+앱은 로그인 없이 푸시 토큰으로 자신을 식별하며, `device`·`watch`·`notification`은 RLS로 막아 두고 `supabase/migrations/20261013010000_push.sql`의 security definer 함수(register_device, save_watch, delete_watch, my_watches, my_settings, set_quiet, my_notifications)로만 접근한다.
 
 실행: GitHub Actions `.github/workflows/collector.yml`가 10분마다(`*/10 * * * *`, UTC, 공개 저장소라 실행 시간 무제한) 테스트 후 `services/collector`를 실행한다. 비밀값은 저장소 Secrets(SEOUL_OPENAPI_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, COLLECTOR_CONTACT_EMAIL). 해외 IP(GitHub 러너)에서도 오픈API 응답 확인(2026-10-13). 첫 수집은 이벤트를 만들지 않는다. 공개 저장소는 60일간 활동이 없으면 예약 실행이 꺼지므로 `.github/workflows/keepalive.yml`이 매월 1일, 마지막 커밋이 20일 넘었을 때만 빈 커밋을 올린다.
 

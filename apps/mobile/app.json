@@ -20,6 +20,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "2b1b6e08-7cf5-436d-bff6-58ab95b3e482"
+      }
+    },
+    "owner": "minjay1011"
   }
 }

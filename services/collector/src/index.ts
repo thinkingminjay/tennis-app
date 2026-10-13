@@ -5,6 +5,7 @@
 import { fetchAllRows } from './openApi.ts';
 import { buildSnapshot, diffEvents } from './transform.ts';
 import { Db } from './supabase.ts';
+import { sendNotifications } from './notify.ts';
 
 function requireEnv(name: string): string {
   const value = process.env[name]?.trim();
@@ -58,6 +59,9 @@ async function main() {
       ? '첫 수집: 이벤트 없이 저장만 했습니다'
       : `이벤트 ${events.length}건 (${countBy(events.map((e) => e.kind))}), API에서 사라진 상품 ${gone.length}건`,
   );
+
+  // Runs even without new events: devices leaving quiet hours get what was held.
+  console.log(await sendNotifications(db));
 }
 
 function countBy(items: string[]): string {

@@ -41,6 +41,10 @@ export class Db {
     );
   }
 
+  delete(table: string, filter: string): Promise<null> {
+    return this.request<null>('DELETE', `${table}?${filter}`);
+  }
+
   insert(table: string, rows: object[]): Promise<null> {
     if (rows.length === 0) return Promise.resolve(null);
     return this.request<null>('POST', table, rows, 'return=minimal');
