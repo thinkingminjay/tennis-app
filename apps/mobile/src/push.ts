@@ -13,6 +13,16 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// 'ask' means the system prompt can still be shown; 'denied' means only the Settings app can turn it on.
+export type Permission = 'granted' | 'ask' | 'denied';
+
+// Reads the current permission without prompting.
+export async function pushPermission(): Promise<Permission> {
+  if (!Device.isDevice) return 'denied';
+  const { status, canAskAgain } = await Notifications.getPermissionsAsync();
+  return status === 'granted' ? 'granted' : canAskAgain ? 'ask' : 'denied';
+}
+
 // Asks for permission, gets the Expo push token and registers it with Supabase.
 // Returns null on simulators or when the user declines.
 export async function registerForPush(): Promise<string | null> {

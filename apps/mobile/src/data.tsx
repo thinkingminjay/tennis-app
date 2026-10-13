@@ -3,6 +3,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { AppState, Linking } from 'react-native';
 import {
   deleteWatch,
   fetchFacilities,
@@ -17,9 +18,10 @@ import {
   type WatchInput,
 } from './api';
 import { ALL_EVENTS, isSimpleWatch } from './format';
-import { registerForPush } from './push';
+import { pushPermission, registerForPush, type Permission } from './push';
 
 const FAVORITES_KEY = 'favorites';
+const WELCOME_KEY = 'welcomeSeen';
 
 type PushState = 'pending' | 'ready' | 'off';
 
@@ -34,7 +36,11 @@ interface Data {
 
   token: string | null;
   push: PushState;
+  permission: Permission | null;
   enablePush: () => Promise<void>;
+  // True until the first-run notification guide (/welcome) has been dismissed.
+  welcome: boolean;
+  finishWelcome: () => void;
   watches: Watch[];
   reloadWatches: () => Promise<void>;
   upsertWatch: (id: string | null, w: WatchInput) => Promise<void>;
@@ -65,6 +71,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [push, setPush] = useState<PushState>('pending');
+  const [permission, setPermission] = useState<Permission | null>(null);
+  const [welcome, setWelcome] = useState(false);
   const [watches, setWatches] = useState<Watch[]>([]);
   const [quiet, setQuietState] = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
@@ -92,12 +100,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setWatches(await myWatches(token));
   }, [token]);
 
-  const enablePush = useCallback(
+  const register = useCallback(
     () =>
       registerForPush()
         .then(async (t) => {
           setToken(t);
           setPush(t ? 'ready' : 'off');
+          setPermission(await pushPermission());
           if (!t) return;
           const [w, q] = await Promise.all([myWatches(t), quietEnabled(t)]);
           setWatches(w);
@@ -110,13 +119,48 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Once the system prompt has been declined it never shows again, so send the user to Settings.
+  const enablePush = useCallback(
+    () => (permission === 'denied' ? Linking.openSettings() : register()),
+    [permission, register],
+  );
+
+  // Registers silently if permission is already granted; otherwise waits for the user to ask.
+  const checkPermission = useCallback(
+    () =>
+      pushPermission()
+        .then((p) => {
+          setPermission(p);
+          if (p === 'granted') return register();
+          setPush('off');
+        })
+        .catch(() => setPush('off')),
+    [register],
+  );
+
+  const finishWelcome = useCallback(() => {
+    setWelcome(false);
+    AsyncStorage.setItem(WELCOME_KEY, '1').catch(() => {});
+  }, []);
+
   useEffect(() => {
     load();
-    enablePush();
+    checkPermission();
+    AsyncStorage.getItem(WELCOME_KEY)
+      .then((v) => setWelcome(!v))
+      .catch(() => {});
     AsyncStorage.getItem(FAVORITES_KEY)
       .then((v) => v && setFavorites(new Set(JSON.parse(v) as string[])))
       .catch(() => {});
-  }, [load, enablePush]);
+  }, [load, checkPermission]);
+
+  // Coming back from Settings may have turned notifications on.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && push === 'off') checkPermission();
+    });
+    return () => sub.remove();
+  }, [push, checkPermission]);
 
   const upsertWatch = useCallback(
     async (id: string | null, w: WatchInput) => {
@@ -192,7 +236,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       reload,
       token,
       push,
+      permission,
       enablePush,
+      welcome,
+      finishWelcome,
       watches,
       reloadWatches,
       upsertWatch,
@@ -205,7 +252,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       toggleFavorite,
     };
   }, [
-    facilities, listings, loading, error, reload, token, push, enablePush, watches, reloadWatches,
+    facilities, listings, loading, error, reload, token, push, permission, enablePush, welcome, finishWelcome, watches, reloadWatches,
     upsertWatch, removeWatch, simpleWatch, toggleSimpleWatch, quiet, toggleQuiet, favorites, toggleFavorite,
   ]);
 

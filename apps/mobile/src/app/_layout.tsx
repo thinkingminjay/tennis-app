@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider, router } from 'expo-rout
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef } from 'react';
 import { useColorScheme } from 'react-native';
-import { DataProvider } from '../data';
+import { DataProvider, useData } from '../data';
 import { useColors } from '../theme';
 
 export default function RootLayout() {
@@ -20,15 +20,26 @@ export default function RootLayout() {
       <ThemeProvider value={theme}>
         <StatusBar style="auto" />
         <NotificationOpener />
+        <WelcomeOpener />
         <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal', headerShadowVisible: false }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="facility/[id]" options={{ title: '' }} />
           <Stack.Screen name="alert" options={{ presentation: 'modal', title: '알림 조건' }} />
           <Stack.Screen name="booking" options={{ presentation: 'modal', headerShown: false }} />
+          <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', headerShown: false, gestureEnabled: false }} />
         </Stack>
       </ThemeProvider>
     </DataProvider>
   );
+}
+
+// Shows the notification guide once, on first launch.
+function WelcomeOpener() {
+  const { welcome } = useData();
+  useEffect(() => {
+    if (welcome) router.push('/welcome');
+  }, [welcome]);
+  return null;
 }
 
 // Tapping a single-event notification opens that listing's booking page, a bundle about one facility

@@ -11,7 +11,7 @@ import { Button, Card, Empty, Ionicons, SectionTitle } from '../../ui';
 
 export default function AlertsTab() {
   const c = useColors();
-  const { token, push, enablePush, watches, facilityById, listingsByFacility, upsertWatch, reloadWatches } = useData();
+  const { token, push, permission, enablePush, watches, facilityById, listingsByFacility, upsertWatch, reloadWatches } = useData();
   const [history, setHistory] = useState<SentNotification[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -50,7 +50,7 @@ export default function AlertsTab() {
           title={push === 'pending' ? '알림을 준비하고 있어요' : '알림 권한이 꺼져 있어요'}
           body="접수 시작, 새 상품, 상태 변화를 알려 드려요. 시간대별 빈자리 알림은 아직 지원하지 않아요."
         />
-        {push === 'off' ? <Button label="알림 켜기" onPress={enablePush} style={{ alignSelf: 'center' }} /> : null}
+        {push === 'off' ? <Button label={permission === 'denied' ? '설정에서 알림 켜기' : '알림 켜기'} onPress={enablePush} style={{ alignSelf: 'center' }} /> : null}
       </View>
     );
   }
