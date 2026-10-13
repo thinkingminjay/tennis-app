@@ -10,7 +10,7 @@ import type { Facility, Listing } from '../../api';
 import { useData } from '../../data';
 import { EMPTY_FILTER, RECEIVING, UPCOMING, isFiltered, listingMatches, minutesAgo, type Filter } from '../../format';
 import { useColors } from '../../theme';
-import { Button, Chip, CountBadge, Empty, Ionicons, SourceFooter, SurfaceBall, surfaceColors } from '../../ui';
+import { Button, Chip, CountBadge, Empty, Hatch, Ionicons, SourceFooter, SurfaceBall, surfaceColors } from '../../ui';
 
 interface Row {
   facility: Facility;
@@ -117,13 +117,13 @@ export default function Home() {
                 {openFacilities ? (
                   <Text>
                     {' · 접수중 '}
-                    <Text style={{ color: c.accent, fontWeight: '700' }}>{openFacilities}</Text>곳
+                    <Text style={{ color: c.accentText, fontWeight: '700' }}>{openFacilities}</Text>곳
                   </Text>
                 ) : null}
               </Text>
               {isFiltered(filter) ? (
                 <Pressable onPress={() => setFilter(EMPTY_FILTER)} hitSlop={8}>
-                  <Text style={{ color: c.accent, fontWeight: '600', fontSize: 13 }}>필터 초기화</Text>
+                  <Text style={{ color: c.accentText, fontWeight: '600', fontSize: 13 }}>필터 초기화</Text>
                 </Pressable>
               ) : null}
             </View>
@@ -160,6 +160,8 @@ export default function Home() {
   );
 }
 
+const THUMB = 44;
+
 function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean; watching: boolean }) {
   const c = useColors();
   const { facility: f, listings, open, soon } = row;
@@ -172,7 +174,8 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
       accessibilityRole="button"
     >
       <View style={styles.cardMain}>
-        <View style={[styles.thumb, { backgroundColor: open ? c.accentSoft : c.offSoft }]}>
+        <View style={[styles.thumb, { backgroundColor: c.surface }]}>
+          <Hatch colors={surfaceColors(c, f.surfaces)} size={THUMB} />
           <SurfaceBall colors={surfaceColors(c, f.surfaces)} size={22} />
         </View>
         <View style={{ flex: 1, gap: 4 }}>
@@ -181,7 +184,7 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
               {f.name}
             </Text>
             {favorite ? <Ionicons name="star" size={15} color={c.soon} /> : null}
-            {watching ? <Ionicons name="notifications" size={15} color={c.accent} /> : null}
+            {watching ? <Ionicons name="notifications" size={15} color={c.accentText} /> : null}
           </View>
           <Text style={[styles.meta, { color: c.sub }]} numberOfLines={1}>
             {[f.district, free && paid ? '무료·유료' : free ? '무료' : '유료'].filter(Boolean).join(' · ')}
@@ -192,7 +195,7 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
       <View style={[styles.cardFoot, { borderTopColor: c.border }]}>
         <Text style={[styles.meta, { color: c.sub }]}>
           접수중{' '}
-          <Text style={{ color: open ? c.accent : c.sub, fontWeight: '700' }}>{open}</Text>
+          <Text style={{ color: open ? c.accentText : c.sub, fontWeight: '700' }}>{open}</Text>
           <Text style={{ color: c.faint }}> / {listings.length}</Text>
         </Text>
         {soon ? <CountBadge status={UPCOMING} count={soon} /> : null}
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
   },
-  thumb: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  thumb: { width: THUMB, height: THUMB, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
   sheet: { flex: 1 },

@@ -105,7 +105,7 @@ export default function AlertEditor() {
             const on = facilityIds.includes(f.id);
             return (
               <Pressable key={f.id} onPress={() => setFacilities(toggle(facilityIds, f.id))} style={[styles.option, { borderBottomColor: c.border }]}>
-                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? c.accent : c.faint} />
+                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? c.accentText : c.faint} />
                 <Text style={{ flex: 1, color: c.text, fontSize: 15 }}>{f.name}</Text>
                 <Text style={{ color: c.sub, fontSize: 13 }}>{f.district}</Text>
               </Pressable>
@@ -144,7 +144,7 @@ export default function AlertEditor() {
             const on = events.includes(e);
             return (
               <Pressable key={e} onPress={() => setEvents(toggle(events, e))} style={[styles.option, { borderBottomColor: c.border }]}>
-                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? c.accent : c.faint} />
+                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? c.accentText : c.faint} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: c.text, fontSize: 15 }}>{EVENT_LABEL[e]}</Text>
                   <Text style={{ color: c.sub, fontSize: 13 }}>{EVENT_HINT[e]}</Text>

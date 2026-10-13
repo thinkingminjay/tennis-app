@@ -46,8 +46,8 @@ export default function AlertsTab() {
       <SectionTitle
         right={
           <Pressable onPress={() => router.push('/alert')} hitSlop={8} style={styles.add} accessibilityRole="button">
-            <Ionicons name="add" size={18} color={c.accent} />
-            <Text style={{ color: c.accent, fontWeight: '600' }}>추가</Text>
+            <Ionicons name="add" size={18} color={c.accentText} />
+            <Text style={{ color: c.accentText, fontWeight: '600' }}>추가</Text>
           </Pressable>
         }
       >

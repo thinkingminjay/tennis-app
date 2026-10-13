@@ -164,7 +164,7 @@ function InfoLine({ icon, text, onPress }: { icon: 'location-outline' | 'call-ou
   return (
     <Pressable onPress={onPress} disabled={!onPress} style={styles.info}>
       <Ionicons name={icon} size={18} color={c.sub} />
-      <Text style={{ color: onPress ? c.accent : c.text, flex: 1 }}>{text}</Text>
+      <Text style={{ color: onPress ? c.accentText : c.text, flex: 1 }}>{text}</Text>
     </Pressable>
   );
 }

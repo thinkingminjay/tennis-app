@@ -9,7 +9,7 @@ export type IconName = ComponentProps<typeof Ionicons>['name'];
 export { Ionicons };
 
 function toneColors(c: Colors, t: Tone) {
-  if (t === 'open') return { fg: c.accent, bg: c.accentSoft };
+  if (t === 'open') return { fg: c.accentText, bg: c.accentSoft };
   if (t === 'soon') return { fg: c.soon, bg: c.soonSoft };
   return { fg: c.off, bg: c.offSoft };
 }
@@ -125,6 +125,37 @@ export function SplitFill({ colors }: { colors: string[] }) {
   );
 }
 
+// Diagonal stripes filling a size×size box, split into the same vertical slices as SurfaceBall.
+// Each slice draws the full stripe pattern shifted by its offset, so lines continue across slices.
+const HATCH_GAP = 6;
+export function Hatch({ colors, size }: { colors: string[]; size: number }) {
+  const slice = size / colors.length;
+  const xs = Array.from({ length: Math.ceil((size * 3) / HATCH_GAP) }, (_, k) => k * HATCH_GAP - size);
+  return (
+    <View style={StyleSheet.absoluteFill}>
+      {colors.map((color, i) => (
+        <View key={i} style={{ position: 'absolute', top: 0, left: i * slice, width: slice, height: size, overflow: 'hidden' }}>
+          {xs.map((x) => (
+            <View
+              key={x}
+              style={{
+                position: 'absolute',
+                left: x - i * slice,
+                top: -size / 2,
+                width: 2,
+                height: size * 2,
+                backgroundColor: color,
+                opacity: 0.3,
+                transform: [{ rotate: '45deg' }],
+              }}
+            />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
 // The tennis ball glyph drawn once per colour, each copy clipped to its own vertical slice.
 export function SurfaceBall({ colors, size }: { colors: string[]; size: number }) {
   const slice = size / colors.length;
@@ -151,7 +182,7 @@ export function Stat({ label, value, accent }: { label: string; value: string; a
   return (
     <View style={[s.stat, { backgroundColor: c.surface }]}>
       <Text style={[s.statLabel, { color: c.sub }]}>{label}</Text>
-      <Text style={[s.statValue, { color: accent ? c.accent : c.text }]} numberOfLines={1}>
+      <Text style={[s.statValue, { color: accent ? c.accentText : c.text }]} numberOfLines={1}>
         {value}
       </Text>
     </View>

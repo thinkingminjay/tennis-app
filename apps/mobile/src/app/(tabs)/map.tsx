@@ -78,7 +78,7 @@ export default function MapTab() {
             <View style={[styles.ratio, { backgroundColor: c.surface }]}>
               <Text style={{ color: c.sub, fontSize: 13 }}>
                 접수중{' '}
-                <Text style={{ color: openCount.get(selected.id) ? c.accent : c.sub, fontWeight: '700' }}>
+                <Text style={{ color: openCount.get(selected.id) ? c.accentText : c.sub, fontWeight: '700' }}>
                   {openCount.get(selected.id) ?? 0}
                 </Text>
                 <Text style={{ color: c.faint }}>/{(listingsByFacility.get(selected.id) ?? []).length}</Text>

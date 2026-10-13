@@ -22,7 +22,7 @@ export default function Booking() {
           <Text style={[styles.notice, { color: c.sub }]}>서울시 예약 화면입니다. 예약은 직접 진행해 주세요</Text>
         </View>
         <Pressable onPress={() => router.back()} hitSlop={12} accessibilityRole="button">
-          <Text style={[styles.close, { color: c.accent }]}>닫기</Text>
+          <Text style={[styles.close, { color: c.accentText }]}>닫기</Text>
         </Pressable>
       </View>
       {url ? (
