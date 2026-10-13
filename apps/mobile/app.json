@@ -30,7 +30,20 @@
     "plugins": [
       "expo-router",
       "expo-image",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFC93C",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#FFC93C"
+          }
+        }
+      ]
     ],
     "scheme": "tennisapp"
   }
