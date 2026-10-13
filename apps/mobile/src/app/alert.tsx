@@ -3,13 +3,13 @@
 
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { EventKind } from '../api';
 import { useData } from '../data';
 import { ALL_EVENTS, EVENT_LABEL, courtOrder, isOffline } from '../format';
 import { useColors } from '../theme';
-import { Button, Chip, Ionicons, SectionTitle } from '../ui';
+import { Button, Card, Chip, Ionicons, SectionTitle } from '../ui';
 
 const EVENT_HINT: Record<EventKind, string> = {
   new_listing: '새 상품이 올라오면',
@@ -81,7 +81,7 @@ export default function AlertEditor() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: c.page }}>
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
         <SectionTitle right={<Text style={{ color: c.sub }}>{facilityIds.length}곳 선택</Text>}>테니스장</SectionTitle>
         {facilityIds.length ? (
@@ -91,29 +91,40 @@ export default function AlertEditor() {
             ))}
           </View>
         ) : null}
-        <View style={[styles.search, { backgroundColor: c.surface }]}>
-          <Ionicons name="search" size={16} color={c.sub} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="테니스장·자치구 검색"
-            placeholderTextColor={c.faint}
-            style={{ flex: 1, color: c.text, fontSize: 15 }}
-          />
-        </View>
-        <View style={styles.list}>
+        <Card>
+          <View style={[styles.search, { backgroundColor: c.surface }]}>
+            <Ionicons name="search" size={16} color={c.sub} />
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="테니스장·자치구 검색"
+              placeholderTextColor={c.faint}
+              style={{ flex: 1, color: c.text, fontSize: 15 }}
+            />
+          </View>
           {matches.slice(0, query ? 50 : 8).map((f) => {
             const on = facilityIds.includes(f.id);
             return (
-              <Pressable key={f.id} onPress={() => setFacilities(toggle(facilityIds, f.id))} style={[styles.option, { borderBottomColor: c.border }]}>
-                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? c.accentText : c.faint} />
-                <Text style={{ flex: 1, color: c.text, fontSize: 15 }}>{f.name}</Text>
-                <Text style={{ color: c.sub, fontSize: 13 }}>{f.district}</Text>
+              <Pressable
+                key={f.id}
+                onPress={() => setFacilities(toggle(facilityIds, f.id))}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: on }}
+                style={({ pressed }) => [styles.option, { borderTopColor: c.border, opacity: pressed ? 0.6 : 1 }]}
+              >
+                <View style={{ flex: 1, gap: 2 }}>
+                  <Text style={{ color: c.text, fontSize: 15, fontWeight: on ? '600' : '400' }}>{f.name}</Text>
+                  {f.district ? <Text style={{ color: c.sub, fontSize: 13 }}>{f.district}</Text> : null}
+                </View>
+                <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? c.accentText : c.border} />
               </Pressable>
             );
           })}
-          {!query && matches.length > 8 ? <Text style={{ color: c.faint, paddingVertical: 10 }}>검색해서 더 찾아보세요</Text> : null}
-        </View>
+          {matches.length === 0 ? <Text style={[styles.more, { color: c.sub }]}>검색 결과가 없어요</Text> : null}
+          {!query && matches.length > 8 ? (
+            <Text style={[styles.more, { color: c.faint, borderTopColor: c.border }]}>검색하면 {matches.length - 8}곳을 더 볼 수 있어요</Text>
+          ) : null}
+        </Card>
 
         {courts.length ? (
           <>
@@ -140,26 +151,28 @@ export default function AlertEditor() {
         <Text style={[styles.hint, { color: c.faint }]}>선택하지 않으면 모두 받아요.</Text>
 
         <SectionTitle>받을 소식</SectionTitle>
-        <View style={styles.list}>
-          {ALL_EVENTS.map((e) => {
-            const on = events.includes(e);
-            return (
-              <Pressable key={e} onPress={() => setEvents(toggle(events, e))} style={[styles.option, { borderBottomColor: c.border }]}>
-                <Ionicons name={on ? 'checkbox' : 'square-outline'} size={22} color={on ? c.accentText : c.faint} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: c.text, fontSize: 15 }}>{EVENT_LABEL[e]}</Text>
-                  <Text style={{ color: c.sub, fontSize: 13 }}>{EVENT_HINT[e]}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
+        <Card>
+          {ALL_EVENTS.map((e, i) => (
+            <View key={e} style={[styles.option, { borderTopColor: c.border, borderTopWidth: i ? StyleSheet.hairlineWidth : 0 }]}>
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text style={{ color: c.text, fontSize: 15, fontWeight: '600' }}>{EVENT_LABEL[e]}</Text>
+                <Text style={{ color: c.sub, fontSize: 13 }}>{EVENT_HINT[e]}</Text>
+              </View>
+              <Switch
+                value={events.includes(e)}
+                onValueChange={() => setEvents(toggle(events, e))}
+                trackColor={{ true: c.accent }}
+                accessibilityLabel={EVENT_LABEL[e]}
+              />
+            </View>
+          ))}
+        </Card>
         <Text style={[styles.hint, { color: c.faint }]}>시간대별 빈자리 알림은 아직 지원하지 않아요.</Text>
 
         {existing ? <Button label="이 알림 삭제" kind="danger" onPress={remove} disabled={busy} style={{ marginTop: 16 }} /> : null}
       </ScrollView>
 
-      <SafeAreaView edges={['bottom']} style={[styles.bottom, { borderTopColor: c.border }]}>
+      <SafeAreaView edges={['bottom']} style={[styles.bottom, { borderTopColor: c.border, backgroundColor: c.card }]}>
         {error ? <Text style={{ color: c.danger, marginBottom: 8 }}>{error}</Text> : null}
         <Button
           label={existing ? '저장' : '알림 만들기'}
@@ -173,9 +186,16 @@ export default function AlertEditor() {
 
 const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingBottom: 8 },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 20, marginTop: 4, paddingHorizontal: 12, height: 42, borderRadius: 10 },
-  list: { paddingHorizontal: 20 },
-  option: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 8, margin: 12, paddingHorizontal: 12, height: 42, borderRadius: 10 },
+  option: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  more: { fontSize: 13, textAlign: 'center', paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   hint: { fontSize: 12, paddingHorizontal: 20, paddingTop: 6 },
   bottom: { paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });
