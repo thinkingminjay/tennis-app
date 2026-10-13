@@ -201,7 +201,7 @@ export function Empty({ icon, title, body }: { icon: IconName; title: string; bo
 
 export function SourceFooter() {
   const c = useColors();
-  return <Text style={[s.footer, { color: c.faint }]}>비공식 앱 · 출처: 서울특별시 (공공누리 제1유형)</Text>;
+  return <Text style={[s.footer, { color: c.faint }]}>비공식 앱 · 서울특별시 공공데이터 사용 (공공누리 제1유형)</Text>;
 }
 
 const s = StyleSheet.create({

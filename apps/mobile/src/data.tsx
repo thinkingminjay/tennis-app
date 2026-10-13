@@ -22,6 +22,7 @@ import { pushPermission, registerForPush, type Permission } from './push';
 
 const FAVORITES_KEY = 'favorites';
 const WELCOME_KEY = 'welcomeSeen';
+const KEEP_LOGIN_KEY = 'keepLogin';
 
 type PushState = 'pending' | 'ready' | 'off';
 
@@ -52,6 +53,9 @@ interface Data {
 
   favorites: Set<string>;
   toggleFavorite: (facilityId: string) => void;
+  // Off: the booking WebView runs incognito, so nothing from the Seoul login is kept on the device.
+  keepLogin: boolean;
+  setKeepLogin: (value: boolean) => void;
 }
 
 const Ctx = createContext<Data | null>(null);
@@ -76,6 +80,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [watches, setWatches] = useState<Watch[]>([]);
   const [quiet, setQuietState] = useState(true);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [keepLogin, setKeepLoginState] = useState(true);
 
   const load = useCallback(
     () =>
@@ -146,6 +151,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     load();
     checkPermission();
+    AsyncStorage.getItem(KEEP_LOGIN_KEY)
+      .then((v) => v === '0' && setKeepLoginState(false))
+      .catch(() => {});
     AsyncStorage.getItem(WELCOME_KEY)
       .then((v) => setWelcome(!v))
       .catch(() => {});
@@ -219,6 +227,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setKeepLogin = useCallback((value: boolean) => {
+    setKeepLoginState(value);
+    AsyncStorage.setItem(KEEP_LOGIN_KEY, value ? '1' : '0').catch(() => {});
+  }, []);
+
   const value = useMemo<Data>(() => {
     const listingsByFacility = new Map<string, Listing[]>();
     for (const l of listings) {
@@ -250,10 +263,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
       toggleQuiet,
       favorites,
       toggleFavorite,
+      keepLogin,
+      setKeepLogin,
     };
   }, [
     facilities, listings, loading, error, reload, token, push, permission, enablePush, welcome, finishWelcome, watches, reloadWatches,
     upsertWatch, removeWatch, simpleWatch, toggleSimpleWatch, quiet, toggleQuiet, favorites, toggleFavorite,
+    keepLogin, setKeepLogin,
   ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

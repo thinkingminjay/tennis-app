@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
+import { useData } from '../data';
 import { useColors } from '../theme';
 import { Ionicons } from '../ui';
 
@@ -13,6 +14,7 @@ export default function Booking() {
   const { url, title } = useLocalSearchParams<{ url: string; title?: string }>();
   const c = useColors();
   const [progress, setProgress] = useState(0);
+  const { keepLogin } = useData();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: c.card }} edges={['top', 'bottom']}>
       <View style={styles.header}>
@@ -50,7 +52,7 @@ export default function Booking() {
         {progress < 1 ? <View style={{ width: `${Math.max(progress, 0.05) * 100}%`, height: '100%', backgroundColor: c.accent }} /> : null}
       </View>
       {url ? (
-        <WebView source={{ uri: url }} onLoadProgress={(e) => setProgress(e.nativeEvent.progress)} style={{ backgroundColor: c.bg }} />
+        <WebView source={{ uri: url }} incognito={!keepLogin} onLoadProgress={(e) => setProgress(e.nativeEvent.progress)} style={{ backgroundColor: c.bg }} />
       ) : null}
     </SafeAreaView>
   );
