@@ -85,7 +85,7 @@ create table device (
 3. 이전 값과 비교해 새 상품, 접수 시작(RCPTBGNDT 도달·상태가 접수중으로), 상태 변화를 `listing_event`에 쌓는다.
 4. 이벤트에 맞는 `watch`를 찾아 Expo Push를 보낸다(방해금지·10분 묶음 규칙 적용). (미구현)
 
-실행: GitHub Actions `.github/workflows/collector.yml`가 10분마다(`*/10 * * * *`, UTC, 공개 저장소라 실행 시간 무제한) 테스트 후 `services/collector`를 실행한다. 비밀값은 저장소 Secrets(SEOUL_OPENAPI_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, COLLECTOR_CONTACT_EMAIL). 해외 IP(GitHub 러너)에서도 오픈API 응답 확인(2026-10-13). 첫 수집은 이벤트를 만들지 않는다.
+실행: GitHub Actions `.github/workflows/collector.yml`가 10분마다(`*/10 * * * *`, UTC, 공개 저장소라 실행 시간 무제한) 테스트 후 `services/collector`를 실행한다. 비밀값은 저장소 Secrets(SEOUL_OPENAPI_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, COLLECTOR_CONTACT_EMAIL). 해외 IP(GitHub 러너)에서도 오픈API 응답 확인(2026-10-13). 첫 수집은 이벤트를 만들지 않는다. 공개 저장소는 60일간 활동이 없으면 예약 실행이 꺼지므로 `.github/workflows/keepalive.yml`이 매월 1일, 마지막 커밋이 20일 넘었을 때만 빈 커밋을 올린다.
 
 ## 예약 팝업 흐름
 

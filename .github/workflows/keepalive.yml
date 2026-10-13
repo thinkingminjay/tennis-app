@@ -1,0 +1,32 @@
+name: keepalive
+
+# GitHub disables scheduled workflows in public repos after 60 days without repository activity.
+# Once a month, push an empty commit if the last commit is older than 20 days,
+# so the gap between commits never reaches 60 days (20 + 31 < 60).
+on:
+  schedule:
+    - cron: '0 0 1 * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Empty commit when idle
+        run: |
+          last=$(git log -1 --format=%ct)
+          age_days=$(( ($(date +%s) - last) / 86400 ))
+          echo "last commit: ${age_days} days ago"
+          if [ "$age_days" -lt 20 ]; then
+            echo "recent activity, nothing to do"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --allow-empty -m "예약 실행 유지용 빈 커밋 (마지막 커밋 ${age_days}일 전)"
+          git push
