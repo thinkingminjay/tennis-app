@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
@@ -26,6 +26,12 @@
         "projectId": "2b1b6e08-7cf5-436d-bff6-58ab95b3e482"
       }
     },
-    "owner": "minjay1011"
+    "owner": "minjay1011",
+    "plugins": [
+      "expo-router",
+      "expo-image",
+      "expo-font"
+    ],
+    "scheme": "tennisapp"
   }
 }
