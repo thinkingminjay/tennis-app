@@ -41,6 +41,10 @@ export class Db {
     );
   }
 
+  update(table: string, filter: string, patch: object): Promise<null> {
+    return this.request<null>('PATCH', `${table}?${filter}`, patch, 'return=minimal');
+  }
+
   delete(table: string, filter: string): Promise<null> {
     return this.request<null>('DELETE', `${table}?${filter}`);
   }

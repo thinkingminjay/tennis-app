@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSnapshot, diffEvents, toKstTimestamp } from '../src/transform.ts';
+import { buildSnapshot, cleanPhone, diffEvents, toKstTimestamp } from '../src/transform.ts';
 import type { OpenApiRow } from '../src/openApi.ts';
 
 const row = (over: Partial<OpenApiRow>): OpenApiRow => ({
@@ -81,4 +81,12 @@ test('new listing, receipt open and status change', () => {
     { svc_id: 'S2', kind: 'status_change', old_status: '접수중', new_status: '예약마감' },
     { svc_id: 'S4', kind: 'new_listing', old_status: null, new_status: '접수중' },
   ]);
+});
+
+test('phone keeps only real numbers', () => {
+  assert.equal(cleanPhone('02-611-9007'), '02-611-9007');
+  assert.equal(cleanPhone('***(금천구테니스협회 사무장) / 02-2627-1428(문화체육과 담당자)'), '02-2627-1428');
+  assert.equal(cleanPhone('02-460-2983 // 주말 및 공휴일 02-460-2998'), '02-460-2983, 02-460-2998');
+  assert.equal(cleanPhone('***, ***'), null);
+  assert.equal(cleanPhone(' '), null);
 });

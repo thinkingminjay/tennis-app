@@ -60,6 +60,18 @@ export function toDate(s: string | undefined): string | null {
   return blank(s)?.match(/^\d{4}-\d{2}-\d{2}/)?.[0] ?? null;
 }
 
+// TELNO mixes masked names and notes ("***(사무장) / 02-2627-1428(담당자)"); keep only real numbers.
+export function cleanPhone(s: string | undefined): string | null {
+  const numbers = blank(s)?.match(/0\d{1,2}-\d{3,4}-\d{4}/g);
+  return numbers ? [...new Set(numbers)].join(', ') : null;
+}
+
+// The open API has no coordinates for these places (no other row of the same place has them either).
+// Approximate positions entered by hand from the facility's road address.
+const COORDINATE_OVERRIDES: Record<string, { lat: number; lng: number }> = {
+  손기정문화체육센터테니스장: { lat: 37.5557, lng: 126.9664 }, // 중구 손기정로 101
+};
+
 function toNumber(s: string | undefined): number | null {
   const n = Number(blank(s));
   return Number.isFinite(n) && n !== 0 ? n : null;
@@ -81,9 +93,9 @@ export function buildSnapshot(allRows: OpenApiRow[]): Snapshot {
       key,
       name: existing?.name ?? parsed.facilityName,
       district: existing?.district ?? blank(row.AREANM),
-      phone: existing?.phone ?? blank(row.TELNO),
-      lat: existing?.lat ?? toNumber(row.Y),
-      lng: existing?.lng ?? toNumber(row.X),
+      phone: existing?.phone ?? cleanPhone(row.TELNO),
+      lat: existing?.lat ?? toNumber(row.Y) ?? COORDINATE_OVERRIDES[key]?.lat ?? null,
+      lng: existing?.lng ?? toNumber(row.X) ?? COORDINATE_OVERRIDES[key]?.lng ?? null,
       image_url: existing?.image_url ?? blank(row.IMGURL),
       indoor: null,
     });

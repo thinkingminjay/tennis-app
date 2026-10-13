@@ -82,7 +82,7 @@ export function fetchListings(): Promise<Listing[]> {
   const select =
     'svc_id,facility_id,title,status,day_type,time_band,period_start,period_end,paid,price_note,' +
     'receipt_start,receipt_end,url,updated_at,court(id,label)';
-  return request(`listing?select=${encodeURIComponent(select)}&order=svc_id`);
+  return request(`listing?select=${encodeURIComponent(select)}&gone_at=is.null&order=svc_id`);
 }
 
 export const registerDevice = (token: string, platform: string) =>

@@ -30,6 +30,9 @@ async function main() {
       r.status,
     ]),
   );
+  const alreadyGone = new Set(
+    (await db.select<{ svc_id: string }>('listing', 'select=svc_id&gone_at=not.is.null')).map((r) => r.svc_id),
+  );
 
   const facilityIds = new Map(
     (await db.upsert<{ id: string; key: string }>('facility', snap.facilities, 'key')).map((f) => [f.key, f.id]),
@@ -46,18 +49,27 @@ async function main() {
   const listingRows = snap.listings.map(({ facilityKey, courtLabel, ...l }) => {
     const facility_id = facilityIds.get(facilityKey)!;
     const court_id = courtLabel ? (courtIds.get(`${facility_id}\u0000${courtLabel}`) ?? null) : null;
-    return { ...l, facility_id, court_id, updated_at: now };
+    return { ...l, facility_id, court_id, updated_at: now, gone_at: null };
   });
   await db.upsert('listing', listingRows, 'svc_id');
 
   const events = diffEvents(previous, snap.listings);
   await db.insert('listing_event', events);
 
-  const gone = [...previous.keys()].filter((id) => !snap.listings.some((l) => l.svc_id === id));
+  // Listings the API no longer returns are hidden (gone_at), not deleted, so a listing that
+  // briefly drops out and comes back doesn't fire a second new_listing alert.
+  const fresh = new Set(snap.listings.map((l) => l.svc_id));
+  const gone = [...previous.keys()].filter((id) => !fresh.has(id));
+  const newlyGone = gone.filter((id) => !alreadyGone.has(id));
+  if (newlyGone.length > previous.size / 2) {
+    console.log(`사라진 상품이 ${newlyGone.length}건으로 너무 많아 숨김 처리를 건너뜁니다 (API 일시 오류 가능성)`);
+  } else if (newlyGone.length > 0) {
+    await db.update('listing', `svc_id=in.(${newlyGone.map(encodeURIComponent).join(',')})`, { gone_at: now });
+  }
   console.log(
     previous.size === 0
       ? '첫 수집: 이벤트 없이 저장만 했습니다'
-      : `이벤트 ${events.length}건 (${countBy(events.map((e) => e.kind))}), API에서 사라진 상품 ${gone.length}건`,
+      : `이벤트 ${events.length}건 (${countBy(events.map((e) => e.kind))}), API에서 사라진 상품 ${gone.length}건 (이번에 숨김 ${newlyGone.length}건)`,
   );
 
   // Runs even without new events: devices leaving quiet hours get what was held.

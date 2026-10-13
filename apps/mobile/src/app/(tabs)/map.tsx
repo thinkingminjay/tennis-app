@@ -76,7 +76,7 @@ export default function MapTab() {
 
 // A tiny top-down tennis court: coloured surface, white outline, net across the middle.
 function CourtIcon({ color, selected }: { color: string; selected?: boolean }) {
-  const scale = selected ? 1.5 : 1;
+  const scale = selected ? 1.3 : 1;
   return (
     <View style={[styles.court, { backgroundColor: color, transform: [{ scale }] }]}>
       <View style={styles.courtLines}>
@@ -87,9 +87,9 @@ function CourtIcon({ color, selected }: { color: string; selected?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  court: { width: 12, height: 18, borderRadius: 2, padding: 2, borderWidth: 1, borderColor: 'rgba(0,0,0,0.25)' },
-  courtLines: { flex: 1, borderWidth: 1, borderColor: '#fff', justifyContent: 'center' },
-  net: { height: 1, backgroundColor: '#fff' },
+  court: { width: 20, height: 30, borderRadius: 3, padding: 3, borderWidth: 1, borderColor: 'rgba(0,0,0,0.25)' },
+  courtLines: { flex: 1, borderWidth: 1.5, borderColor: '#fff', justifyContent: 'center' },
+  net: { height: 1.5, backgroundColor: '#fff' },
   legend: {
     position: 'absolute',
     top: 12,

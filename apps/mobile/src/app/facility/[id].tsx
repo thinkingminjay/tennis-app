@@ -81,7 +81,7 @@ export default function FacilityDetail() {
             <SectionTitle>정보</SectionTitle>
             <View style={{ paddingHorizontal: 20, gap: 10 }}>
               {f.address ? <InfoLine icon="location-outline" text={f.address} /> : null}
-              {f.phone ? <InfoLine icon="call-outline" text={f.phone} onPress={() => Linking.openURL(`tel:${f.phone}`)} /> : null}
+              {f.phone ? <InfoLine icon="call-outline" text={f.phone} onPress={() => Linking.openURL(`tel:${f.phone!.split(',')[0]}`)} /> : null}
             </View>
           </>
         ) : null}
