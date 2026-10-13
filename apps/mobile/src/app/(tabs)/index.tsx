@@ -10,7 +10,7 @@ import type { Facility, Listing } from '../../api';
 import { useData } from '../../data';
 import { EMPTY_FILTER, RECEIVING, UPCOMING, isFiltered, listingMatches, minutesAgo, type Filter } from '../../format';
 import { useColors } from '../../theme';
-import { Button, Chip, CountBadge, Empty, Hatch, Ionicons, SourceFooter, SurfaceBall, surfaceColors } from '../../ui';
+import { Button, Chip, CountBadge, Empty, Hatch, Ionicons, SURFACE_LABEL, SourceFooter, SurfaceBall, surfaceColors } from '../../ui';
 
 interface Row {
   facility: Facility;
@@ -189,7 +189,9 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
             {watching ? <Ionicons name="notifications" size={15} color={c.accentText} /> : null}
           </View>
           <Text style={[styles.meta, { color: c.sub }]} numberOfLines={1}>
-            {[f.district, free && paid ? '무료·유료' : free ? '무료' : '유료'].filter(Boolean).join(' · ')}
+            {[f.district, free && paid ? '무료·유료' : free ? '무료' : '유료', f.surfaces?.map((x) => SURFACE_LABEL[x]).join('·')]
+              .filter(Boolean)
+              .join(' · ')}
           </Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={c.faint} />
