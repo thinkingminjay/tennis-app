@@ -87,6 +87,27 @@ export function extractSurfaces(text: string): Surface[] {
   return SURFACE_PATTERNS.filter(([, re]) => re.test(plain)).map(([s]) => s);
 }
 
+// Surfaces looked up by hand (2026-10-21) for places whose notices say nothing. Used only when the
+// notice text gives no surface, so a notice that names one always wins. Source per line.
+const SURFACE_OVERRIDES: Record<string, Surface[]> = {
+  장충테니스장: ['hard'], // 서울시 생활체육포털: 하드코트 9면
+  한남테니스장: ['clay', 'grass'], // 생활체육포털: 실외 클레이 6면, 인조잔디 6면
+  선우공원테니스장: ['clay', 'grass'], // 생활체육포털: 3면 (인조잔디/클레이)
+  월드컵공원테니스장: ['clay'], // 생활체육포털: 클레이 코트 2면
+  뚝섬한강공원테니스장: ['clay'], // 생활체육포털, 한강공원 안내: 4면 (클레이)
+  광나루한강공원테니스장: ['clay'], // 한강공원 안내: 8면 (클레이)
+  이촌한강공원테니스장: ['clay'], // 한강공원 안내: 8면 (클레이)
+  잠원한강공원테니스장: ['clay'], // 한강공원 안내: 6면 (클레이)
+  망원한강공원테니스장: ['clay'], // 한강공원 안내: 6면 (클레이)
+  동작테니스장: ['clay'], // 동작구시설관리공단: 클레이코트 6면
+  서남센터테니스장: ['hard', 'grass'], // 서울물재생시설공단: 인조잔디 10면, 하드코트 4면
+  탄천센터테니스장: ['grass'], // 시공사 사례(2021): 인조잔디 3면
+  신도림테니스장: ['hard'], // 이용 후기: 4면 모두 하드코트
+  어린이대공원테니스장: ['grass'], // 예약 안내 사이트: 인조잔디
+  망원유수지소프트테니스장: ['grass'], // 마포구 테니스장 정리 글: 인조잔디 1면
+  망원나들목테니스장: ['grass'], // 마포구 테니스장 정리 글: 인조잔디 4면
+};
+
 function toNumber(s: string | undefined): number | null {
   const n = Number(blank(s));
   return Number.isFinite(n) && n !== 0 ? n : null;
@@ -151,6 +172,7 @@ export function buildSnapshot(allRows: OpenApiRow[]): Snapshot {
   // Fixed order (hard, clay, grass) so split icons always read the same way.
   for (const [key, found] of surfaces) {
     if (found.size) facilities.get(key)!.surfaces = SURFACE_PATTERNS.map(([s]) => s).filter((s) => found.has(s));
+    else facilities.get(key)!.surfaces = SURFACE_OVERRIDES[key] ?? null;
   }
 
   return { facilities: [...facilities.values()], courts: [...courts.values()], listings };

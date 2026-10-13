@@ -109,3 +109,13 @@ test('buildSnapshot merges surfaces per facility in fixed order', () => {
   assert.deepEqual(by.get('장충테니스장'), ['hard', 'clay']);
   assert.equal(by.get('삼청테니스장'), null);
 });
+
+test('buildSnapshot falls back to hand-checked surfaces only when the notice names none', () => {
+  const snap = buildSnapshot([
+    row({ SVCID: 'A', DTLCONT: '' }),
+    row({ SVCID: 'B', SVCNM: '10/1~10/15 한남테니스장 1번코트', PLACENM: '한남테니스장', DTLCONT: '하드코트' }),
+  ]);
+  const by = Object.fromEntries(snap.facilities.map((f) => [f.key, f.surfaces]));
+  assert.deepEqual(by['장충테니스장'], ['hard']);
+  assert.deepEqual(by['한남테니스장'], ['hard']);
+});

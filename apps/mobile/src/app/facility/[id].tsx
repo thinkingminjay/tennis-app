@@ -96,7 +96,7 @@ export default function FacilityDetail() {
                   <SurfaceBall colors={surfaceColors(c, f.surfaces)} size={18} />
                   <Text style={{ color: c.text, flex: 1 }}>
                     바닥 {f.surfaces.map((x) => SURFACE_LABEL[x]).join(' · ')}
-                    <Text style={{ color: c.faint }}> (안내문 기준)</Text>
+                    <Text style={{ color: c.faint }}> (참고용)</Text>
                   </Text>
                 </View>
               ) : null}
