@@ -1,7 +1,11 @@
 import { useColorScheme } from 'react-native';
 
 // docs/DESIGN.md: bright and clean, one accent for 접수중, grey for closed states, dark mode.
+// Screens sit on a light grey `page` with white `card` groups (pattern from Korean booking and
+// settings screens on uibowl); `surface` is the subtle fill used inside a card.
 const light = {
+  page: '#F2F4F6',
+  card: '#FFFFFF',
   bg: '#FFFFFF',
   surface: '#F5F6F4',
   border: '#E3E5E1',
@@ -19,8 +23,10 @@ const light = {
 };
 
 const dark: typeof light = {
+  page: '#0F1112',
+  card: '#1A1D1F',
   bg: '#0F1112',
-  surface: '#1A1D1F',
+  surface: '#25292C',
   border: '#2A2E31',
   text: '#F1F3F4',
   sub: '#A3A9AE',

@@ -105,6 +105,25 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
   );
 }
 
+// A white rounded group on the grey page, like grouped settings and booking summaries.
+export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const c = useColors();
+  return <View style={[s.card, { backgroundColor: c.card }, style]}>{children}</View>;
+}
+
+// A small grey tile with a big number, used for at-a-glance summaries.
+export function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  const c = useColors();
+  return (
+    <View style={[s.stat, { backgroundColor: c.surface }]}>
+      <Text style={[s.statLabel, { color: c.sub }]}>{label}</Text>
+      <Text style={[s.statValue, { color: accent ? c.accent : c.text }]} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
 export function Empty({ icon, title, body }: { icon: IconName; title: string; body?: string }) {
   const c = useColors();
   return (
@@ -153,6 +172,10 @@ const s = StyleSheet.create({
     paddingBottom: 8,
   },
   section: { fontSize: 17, fontWeight: '700' },
+  card: { marginHorizontal: 16, borderRadius: 16, overflow: 'hidden' },
+  stat: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 12, borderRadius: 12 },
+  statLabel: { fontSize: 12 },
+  statValue: { fontSize: 17, fontWeight: '700' },
   empty: { alignItems: 'center', gap: 8, paddingVertical: 48, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center' },
   emptyBody: { fontSize: 14, textAlign: 'center', lineHeight: 20 },

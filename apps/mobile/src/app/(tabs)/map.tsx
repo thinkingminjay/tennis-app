@@ -8,7 +8,7 @@ import type { Facility } from '../../api';
 import { useData } from '../../data';
 import { RECEIVING } from '../../format';
 import { useColors } from '../../theme';
-import { CountBadge, Ionicons } from '../../ui';
+import { Ionicons } from '../../ui';
 
 const OFF = '#9AA0A6';
 
@@ -47,7 +47,7 @@ export default function MapTab() {
         ))}
       </MapView>
 
-      <View style={[styles.legend, { backgroundColor: c.bg }]}>
+      <View style={[styles.legend, { backgroundColor: c.card }]}>
         <CourtIcon color={c.accent} />
         <Text style={[styles.legendText, { color: c.text }]}>접수중 있음</Text>
         <CourtIcon color={OFF} />
@@ -58,16 +58,29 @@ export default function MapTab() {
       {selected ? (
         <Pressable
           onPress={() => router.push(`/facility/${selected.id}`)}
-          style={({ pressed }) => [styles.card, { backgroundColor: c.bg, opacity: pressed ? 0.9 : 1 }]}
+          style={({ pressed }) => [styles.card, { backgroundColor: c.card, opacity: pressed ? 0.9 : 1 }]}
         >
-          <View style={{ flex: 1, gap: 6 }}>
-            <Text style={[styles.name, { color: c.text }]}>{selected.name}</Text>
-            <Text style={{ color: c.sub }}>
-              {selected.district} · 상품 {(listingsByFacility.get(selected.id) ?? []).length}개
+          <Text style={{ color: c.sub, fontSize: 13 }}>{selected.district}</Text>
+          <View style={styles.cardTitle}>
+            <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
+              {selected.name}
             </Text>
-            {openCount.get(selected.id) ? <CountBadge status={RECEIVING} count={openCount.get(selected.id)!} /> : null}
+            <Ionicons name="chevron-forward" size={18} color={c.text} />
           </View>
-          <Ionicons name="chevron-forward" size={20} color={c.faint} />
+          <View style={styles.cardFoot}>
+            <View style={[styles.ratio, { backgroundColor: c.surface }]}>
+              <Text style={{ color: c.sub, fontSize: 13 }}>
+                접수중{' '}
+                <Text style={{ color: openCount.get(selected.id) ? c.accent : c.sub, fontWeight: '700' }}>
+                  {openCount.get(selected.id) ?? 0}
+                </Text>
+                <Text style={{ color: c.faint }}>/{(listingsByFacility.get(selected.id) ?? []).length}</Text>
+              </Text>
+            </View>
+            <View style={[styles.more, { backgroundColor: c.accent }]}>
+              <Text style={{ color: c.onAccent, fontSize: 13, fontWeight: '700' }}>상세 보기</Text>
+            </View>
+          </View>
         </Pressable>
       ) : null}
     </View>
@@ -112,8 +125,7 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     bottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: 2,
     padding: 16,
     borderRadius: 16,
     shadowColor: '#000',
@@ -122,5 +134,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  name: { fontSize: 17, fontWeight: '700' },
+  name: { fontSize: 18, fontWeight: '700', flexShrink: 1 },
+  cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  cardFoot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  ratio: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  more: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
 });

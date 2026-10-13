@@ -10,7 +10,7 @@ import type { Listing } from '../../api';
 import { useData } from '../../data';
 import { RECEIVING, bandLabel, courtOrder, minutesAgo, period, receiptNote, tone } from '../../format';
 import { useColors } from '../../theme';
-import { Button, Empty, Ionicons, SectionTitle, SourceFooter, StatusPill } from '../../ui';
+import { Button, Card, Empty, Ionicons, SectionTitle, SourceFooter, Stat, StatusPill } from '../../ui';
 
 const NO_COURT = '코트 구분 없음';
 
@@ -39,9 +39,11 @@ export default function FacilityDetail() {
   const watching = !!simpleWatch(f.id);
   const updated = listings.reduce<string | undefined>((a, l) => (!a || l.updated_at > a ? l.updated_at : a), undefined);
   const open = listings.filter((l) => l.status === RECEIVING).length;
+  const free = listings.some((l) => l.paid === false);
+  const paid = listings.some((l) => l.paid !== false);
 
   return (
-    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <View style={{ flex: 1, backgroundColor: c.page }}>
       <Stack.Screen
         options={{
           title: f.name,
@@ -57,39 +59,48 @@ export default function FacilityDetail() {
           <Image source={{ uri: f.image_url }} style={[styles.photo, { backgroundColor: c.surface }]} contentFit="cover" transition={150} />
         ) : null}
 
-        <View style={styles.head}>
+        <View style={[styles.head, { backgroundColor: c.card }]}>
+          <Text style={[styles.district, { color: c.sub }]}>{f.district ?? '서울'}</Text>
           <Text style={[styles.name, { color: c.text }]}>{f.name}</Text>
-          <Text style={{ color: c.sub }}>
-            {[f.district, `상품 ${listings.length}개`, open ? `접수중 ${open}개` : null].filter(Boolean).join(' · ')}
-          </Text>
-          <Text style={[styles.meta, { color: c.faint }]}>{minutesAgo(updated)} · ‘접수중’은 접수 기간이라는 뜻이에요. 빈자리는 예약 화면 달력에서 확인해 주세요</Text>
+          <View style={styles.stats}>
+            <Stat label="접수중" value={`${open}개`} accent={open > 0} />
+            <Stat label="전체 상품" value={`${listings.length}개`} />
+            <Stat label="요금" value={free && paid ? '무료·유료' : free ? '무료' : '유료'} />
+          </View>
+          <View style={[styles.notice, { backgroundColor: c.surface }]}>
+            <Ionicons name="information-circle" size={16} color={c.sub} style={{ marginTop: 1 }} />
+            <Text style={[styles.noticeText, { color: c.sub }]}>
+              ‘접수중’은 접수 기간이라는 뜻이에요. 빈자리는 예약 화면 달력에서 확인해 주세요.
+            </Text>
+          </View>
+          <Text style={[styles.meta, { color: c.faint, marginTop: 8 }]}>{minutesAgo(updated)}</Text>
         </View>
 
         {courts.map(([label, items]) => (
           <View key={label}>
-            <SectionTitle>{label}</SectionTitle>
-            <View style={{ paddingHorizontal: 16, gap: 8 }}>
-              {items.map((l) => (
-                <ListingRow key={l.svc_id} listing={l} />
+            <SectionTitle right={<Text style={[styles.meta, { color: c.sub }]}>{items.length}개</Text>}>{label}</SectionTitle>
+            <Card>
+              {items.map((l, i) => (
+                <ListingRow key={l.svc_id} listing={l} first={i === 0} />
               ))}
-            </View>
+            </Card>
           </View>
         ))}
 
         {f.address || f.phone ? (
           <>
             <SectionTitle>정보</SectionTitle>
-            <View style={{ paddingHorizontal: 20, gap: 10 }}>
+            <Card style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
               {f.address ? <InfoLine icon="location-outline" text={f.address} /> : null}
               {f.phone ? <InfoLine icon="call-outline" text={f.phone} onPress={() => Linking.openURL(`tel:${f.phone!.split(',')[0]}`)} /> : null}
-            </View>
+            </Card>
           </>
         ) : null}
 
         <SourceFooter />
       </ScrollView>
 
-      <SafeAreaView edges={['bottom']} style={[styles.bottom, { borderTopColor: c.border, backgroundColor: c.bg }]}>
+      <SafeAreaView edges={['bottom']} style={[styles.bottom, { borderTopColor: c.border, backgroundColor: c.card }]}>
         <Button
           label={watching ? '알림 받는 중' : '이 테니스장 알림 받기'}
           icon={watching ? 'notifications' : 'notifications-outline'}
@@ -109,7 +120,7 @@ export default function FacilityDetail() {
   );
 }
 
-function ListingRow({ listing: l }: { listing: Listing }) {
+function ListingRow({ listing: l, first }: { listing: Listing; first: boolean }) {
   const c = useColors();
   const active = tone(l.status) !== 'off';
   const note = receiptNote(l);
@@ -119,7 +130,7 @@ function ListingRow({ listing: l }: { listing: Listing }) {
       onPress={() => router.push({ pathname: '/booking', params: { url: l.url!, title: l.title } })}
       style={({ pressed }) => [
         styles.row,
-        { borderColor: active ? c.border : 'transparent', backgroundColor: active ? c.bg : c.surface, opacity: pressed ? 0.7 : 1 },
+        { borderTopColor: c.border, borderTopWidth: first ? 0 : StyleSheet.hairlineWidth, opacity: pressed ? 0.6 : 1 },
       ]}
       accessibilityRole="button"
       accessibilityHint="서울시 예약 화면을 엽니다"
@@ -151,11 +162,15 @@ function InfoLine({ icon, text, onPress }: { icon: 'location-outline' | 'call-ou
 
 const styles = StyleSheet.create({
   photo: { width: '100%', aspectRatio: 16 / 9 },
-  head: { paddingHorizontal: 20, paddingTop: 16, gap: 4 },
+  head: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 16, gap: 4 },
+  district: { fontSize: 13 },
   name: { fontSize: 24, fontWeight: '800' },
+  stats: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  notice: { flexDirection: 'row', gap: 6, padding: 12, borderRadius: 12, marginTop: 10 },
+  noticeText: { flex: 1, fontSize: 13, lineHeight: 18 },
   meta: { fontSize: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   rowTitle: { fontSize: 15, fontWeight: '600' },
-  info: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  info: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },
   bottom: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
 });

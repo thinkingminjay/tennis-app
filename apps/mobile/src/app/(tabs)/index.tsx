@@ -52,10 +52,11 @@ export default function Home() {
     );
   }, [facilities, listingsByFacility, filter, favorites]);
 
+  const openFacilities = rows.filter((r) => r.open > 0).length;
   const set = (patch: Partial<Filter>) => setFilter((f) => ({ ...f, ...patch }));
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: c.page }} edges={['top']}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: c.text }]}>테니스장</Text>
         <Text style={[styles.meta, { color: c.sub }]}>{minutesAgo(updatedAt)}</Text>
@@ -109,12 +110,22 @@ export default function Home() {
           )
         }
         ListHeaderComponent={
-          isFiltered(filter) ? (
+          rows.length ? (
             <View style={styles.resultRow}>
-              <Text style={{ color: c.sub }}>{rows.length}곳</Text>
-              <Pressable onPress={() => setFilter(EMPTY_FILTER)} hitSlop={8}>
-                <Text style={{ color: c.accent, fontWeight: '600' }}>필터 초기화</Text>
-              </Pressable>
+              <Text style={{ color: c.sub, fontSize: 13 }}>
+                총 <Text style={{ color: c.text, fontWeight: '700' }}>{rows.length}</Text>곳
+                {openFacilities ? (
+                  <Text>
+                    {' · 접수중 '}
+                    <Text style={{ color: c.accent, fontWeight: '700' }}>{openFacilities}</Text>곳
+                  </Text>
+                ) : null}
+              </Text>
+              {isFiltered(filter) ? (
+                <Pressable onPress={() => setFilter(EMPTY_FILTER)} hitSlop={8}>
+                  <Text style={{ color: c.accent, fontWeight: '600', fontSize: 13 }}>필터 초기화</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null
         }
@@ -157,31 +168,35 @@ function FacilityCard({ row, favorite, watching }: { row: Row; favorite: boolean
   return (
     <Pressable
       onPress={() => router.push(`/facility/${f.id}`)}
-      style={({ pressed }) => [styles.card, { backgroundColor: c.surface, opacity: pressed ? 0.8 : 1 }]}
+      style={({ pressed }) => [styles.card, { backgroundColor: c.card, opacity: pressed ? 0.85 : 1 }]}
       accessibilityRole="button"
     >
-      <View style={[styles.thumb, { backgroundColor: open ? c.accentSoft : c.offSoft }]}>
-        <Ionicons name="tennisball" size={22} color={open ? c.accent : c.off} />
-      </View>
-      <View style={{ flex: 1, gap: 6 }}>
-        <View style={styles.cardTop}>
-          <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
-            {f.name}
-          </Text>
-          {favorite ? <Ionicons name="star" size={15} color={c.soon} /> : null}
-          {watching ? <Ionicons name="notifications" size={15} color={c.accent} /> : null}
+      <View style={styles.cardMain}>
+        <View style={[styles.thumb, { backgroundColor: open ? c.accentSoft : c.offSoft }]}>
+          <Ionicons name="tennisball" size={22} color={open ? c.accent : c.off} />
         </View>
-        <Text style={[styles.meta, { color: c.sub }]} numberOfLines={1}>
-          {[f.district, `상품 ${listings.length}개`, free && paid ? '무료·유료' : free ? '무료' : '유료'].filter(Boolean).join(' · ')}
-        </Text>
-        {open || soon ? (
-          <View style={styles.badges}>
-            {open ? <CountBadge status={RECEIVING} count={open} /> : null}
-            {soon ? <CountBadge status={UPCOMING} count={soon} /> : null}
+        <View style={{ flex: 1, gap: 4 }}>
+          <View style={styles.cardTop}>
+            <Text style={[styles.name, { color: c.text }]} numberOfLines={1}>
+              {f.name}
+            </Text>
+            {favorite ? <Ionicons name="star" size={15} color={c.soon} /> : null}
+            {watching ? <Ionicons name="notifications" size={15} color={c.accent} /> : null}
           </View>
-        ) : null}
+          <Text style={[styles.meta, { color: c.sub }]} numberOfLines={1}>
+            {[f.district, free && paid ? '무료·유료' : free ? '무료' : '유료'].filter(Boolean).join(' · ')}
+          </Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={c.faint} />
       </View>
-      <Ionicons name="chevron-forward" size={18} color={c.faint} />
+      <View style={[styles.cardFoot, { borderTopColor: c.border }]}>
+        <Text style={[styles.meta, { color: c.sub }]}>
+          접수중{' '}
+          <Text style={{ color: open ? c.accent : c.sub, fontWeight: '700' }}>{open}</Text>
+          <Text style={{ color: c.faint }}> / {listings.length}</Text>
+        </Text>
+        {soon ? <CountBadge status={UPCOMING} count={soon} /> : null}
+      </View>
     </Pressable>
   );
 }
@@ -194,11 +209,19 @@ const styles = StyleSheet.create({
   reset: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, height: 34, borderRadius: 999, borderWidth: 1 },
   error: { paddingHorizontal: 20, paddingBottom: 8 },
   resultRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4, paddingBottom: 10 },
-  card: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 16 },
-  thumb: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  card: { borderRadius: 16, overflow: 'hidden' },
+  cardMain: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  cardFoot: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  thumb: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
-  badges: { flexDirection: 'row', gap: 6 },
   sheet: { flex: 1 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20 },
   sheetTitle: { fontSize: 20, fontWeight: '700' },

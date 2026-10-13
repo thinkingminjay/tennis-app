@@ -12,7 +12,7 @@ export default function RootLayout() {
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
-    colors: { ...base.colors, primary: c.accent, background: c.bg, card: c.bg, text: c.text, border: c.border },
+    colors: { ...base.colors, primary: c.accent, background: c.page, card: c.card, text: c.text, border: c.border },
   };
 
   return (

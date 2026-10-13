@@ -17,6 +17,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.faint,
         headerShadowVisible: false,
+        headerStyle: { backgroundColor: c.page },
         headerTitleAlign: 'left',
         headerTitleStyle: { fontSize: 20, fontWeight: '700' },
       }}

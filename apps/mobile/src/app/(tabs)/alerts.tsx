@@ -7,7 +7,7 @@ import { myNotifications, type SentNotification } from '../../api';
 import { useData } from '../../data';
 import { timeAgo, watchSummary, watchTitle } from '../../format';
 import { useColors } from '../../theme';
-import { Button, Empty, Ionicons, SectionTitle } from '../../ui';
+import { Button, Card, Empty, Ionicons, SectionTitle } from '../../ui';
 
 export default function AlertsTab() {
   const c = useColors();
@@ -30,7 +30,7 @@ export default function AlertsTab() {
 
   if (push !== 'ready') {
     return (
-      <View style={{ flex: 1, backgroundColor: c.bg, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: c.page, justifyContent: 'center' }}>
         <Empty
           icon="notifications-off-outline"
           title={push === 'pending' ? '알림을 준비하고 있어요' : '알림 권한이 꺼져 있어요'}
@@ -42,7 +42,7 @@ export default function AlertsTab() {
   }
 
   return (
-    <ScrollView style={{ backgroundColor: c.bg }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}>
+    <ScrollView style={{ backgroundColor: c.page }} contentContainerStyle={{ paddingBottom: 32 }} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}>
       <SectionTitle
         right={
           <Pressable onPress={() => router.push('/alert')} hitSlop={8} style={styles.add} accessibilityRole="button">
@@ -57,12 +57,15 @@ export default function AlertsTab() {
       {watches.length === 0 ? (
         <Empty icon="notifications-outline" title="아직 알림 조건이 없어요" body="테니스장 상세에서 '알림 받기'를 누르거나 조건을 추가해 보세요." />
       ) : (
-        <View style={{ paddingHorizontal: 16, gap: 8 }}>
-          {watches.map((w) => (
+        <Card>
+          {watches.map((w, i) => (
             <Pressable
               key={w.id}
               onPress={() => router.push({ pathname: '/alert', params: { id: w.id } })}
-              style={({ pressed }) => [styles.watch, { backgroundColor: c.surface, opacity: pressed ? 0.8 : 1 }]}
+              style={({ pressed }) => [
+                styles.watch,
+                { borderTopColor: c.border, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: pressed ? 0.6 : 1 },
+              ]}
             >
               <View style={{ flex: 1, gap: 4 }}>
                 <Text style={[styles.watchTitle, { color: w.enabled ? c.text : c.sub }]} numberOfLines={1}>
@@ -79,20 +82,23 @@ export default function AlertsTab() {
               />
             </Pressable>
           ))}
-        </View>
+        </Card>
       )}
 
       <SectionTitle>받은 알림</SectionTitle>
       {history.length === 0 ? (
         <Empty icon="mail-outline" title="받은 알림이 없어요" />
       ) : (
-        <View style={{ paddingHorizontal: 20 }}>
-          {history.map((n) => (
+        <Card>
+          {history.map((n, i) => (
             <Pressable
               key={n.id}
               disabled={!n.url}
               onPress={() => router.push({ pathname: '/booking', params: { url: n.url!, title: n.title } })}
-              style={({ pressed }) => [styles.item, { borderBottomColor: c.border, opacity: pressed ? 0.6 : 1 }]}
+              style={({ pressed }) => [
+                styles.item,
+                { borderTopColor: c.border, borderTopWidth: i ? StyleSheet.hairlineWidth : 0, opacity: pressed ? 0.6 : 1 },
+              ]}
             >
               <View style={{ flex: 1, gap: 3 }}>
                 <Text style={{ color: c.text, fontWeight: '600' }}>{n.title}</Text>
@@ -101,7 +107,7 @@ export default function AlertsTab() {
               <Text style={{ color: c.faint, fontSize: 12 }}>{timeAgo(n.sent_at)}</Text>
             </Pressable>
           ))}
-        </View>
+        </Card>
       )}
     </ScrollView>
   );
@@ -109,7 +115,7 @@ export default function AlertsTab() {
 
 const styles = StyleSheet.create({
   add: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  watch: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14 },
+  watch: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
   watchTitle: { fontSize: 15, fontWeight: '700' },
-  item: { flexDirection: 'row', gap: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
+  item: { flexDirection: 'row', gap: 12, paddingHorizontal: 16, paddingVertical: 14 },
 });
