@@ -106,6 +106,10 @@ const SURFACE_OVERRIDES: Record<string, Surface[]> = {
   어린이대공원테니스장: ['grass'], // 예약 안내 사이트: 인조잔디
   망원유수지소프트테니스장: ['grass'], // 마포구 테니스장 정리 글: 인조잔디 1면
   망원나들목테니스장: ['grass'], // 마포구 테니스장 정리 글: 인조잔디 4면
+  서울에너지공사목동테니스장: ['clay'], // 사용자 확인
+  마루공원테니스장: ['grass'], // 사용자 확인
+  독산테니스장: ['grass'], // 사용자 확인
+  가좌테니스장: ['grass'], // 사용자 확인
 };
 
 function toNumber(s: string | undefined): number | null {
